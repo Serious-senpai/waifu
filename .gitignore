@@ -1,0 +1,15 @@
+.*
+analysis_options.yaml
+haruka_client.iml
+pubspec.lock
+run.bat
+
+test
+android/*
+!android/app
+android/app/*
+!android/app/src
+android/app/src/*
+!android/app/src/main
+android/app/src/main/*
+!android/app/src/main/AndroidManifest.xml

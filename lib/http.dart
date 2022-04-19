@@ -26,7 +26,7 @@ class HTTPClient {
   };
 
   /// The underlying [Client]
-  final Client client;
+  final Client _client;
 
   /// The Haruka server this client is currently connected to
   final String harukaHost;
@@ -39,10 +39,7 @@ class HTTPClient {
 
   final _ready = Event();
 
-  /// Initialize a new [HTTPClient] from a [Client] and a specific [harukaHost].
-  ///
-  /// Use [create] if you are unsure which host to connect to.
-  HTTPClient(this.client, this.harukaHost);
+  HTTPClient._(this._client, this.harukaHost);
 
   /// Create a new [HTTPClient] that connects to an appropriate [harukaHost]
   static Future<HTTPClient> create() async {
@@ -50,7 +47,7 @@ class HTTPClient {
     var response = await client.get(Uri.https("haruka39.herokuapp.com", "/"));
     var harukaHost = response.statusCode == 200 ? "haruka39.herokuapp.com" : "haruka39-clone.herokuapp.com";
 
-    var httpClient = HTTPClient(client, harukaHost);
+    var httpClient = HTTPClient._(client, harukaHost);
     return httpClient;
   }
 
@@ -75,17 +72,17 @@ class HTTPClient {
     method = method.toUpperCase();
     switch (method) {
       case "DELETE":
-        return client.delete(uri, headers: headers, body: body, encoding: encoding);
+        return _client.delete(uri, headers: headers, body: body, encoding: encoding);
       case "GET":
-        return client.get(uri, headers: headers);
+        return _client.get(uri, headers: headers);
       case "HEAD":
-        return client.head(uri, headers: headers);
+        return _client.head(uri, headers: headers);
       case "PATCH":
-        return client.patch(uri, headers: headers, body: body, encoding: encoding);
+        return _client.patch(uri, headers: headers, body: body, encoding: encoding);
       case "POST":
-        return client.post(uri, headers: headers, body: body, encoding: encoding);
+        return _client.post(uri, headers: headers, body: body, encoding: encoding);
       case "PUT":
-        return client.put(uri, headers: headers, body: body, encoding: encoding);
+        return _client.put(uri, headers: headers, body: body, encoding: encoding);
     }
     throw ArgumentError("Unknown method $method");
   }
@@ -98,6 +95,6 @@ class HTTPClient {
   }) {
     var _headers = Map<String, String>.from(_defaultHeaders);
     if (headers != null) _headers.addAll(headers);
-    return client.get(url, headers: _headers);
+    return _client.get(url, headers: _headers);
   }
 }

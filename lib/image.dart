@@ -1,3 +1,4 @@
+import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:fluttertoast/fluttertoast.dart";
 
@@ -137,7 +138,7 @@ class _ImagePageState extends State<ImagePage> {
       await loadCategories();
     }
 
-    var display = client.mode == ImageMode.random ? "Current mode: random" : "Current mode: " + modeConvert(client.mode).toUpperCase() + " ${client.category}";
+    var display = client.mode == ImageMode.random ? "Current mode: random" : "Current mode: " + describeEnum(client.mode).toUpperCase() + " ${client.category}";
     return Drawer(
       child: ListView(
         children: [

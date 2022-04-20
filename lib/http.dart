@@ -16,6 +16,10 @@ class HTTPException implements Exception {
   String toString() => "HTTPException ($statusCode): $response";
 }
 
+void raiseForStatus(Response response) {
+  if (response.statusCode >= 400) throw HTTPException(response);
+}
+
 /// Low-level class for handling HTTP requests to the Haruka server
 class HTTPClient {
   /// Default headers for making requests to web servers

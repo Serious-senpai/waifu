@@ -4,6 +4,7 @@ haruka_client.iml
 pubspec.lock
 run.bat
 
+build
 test
 android/*
 !android/app

@@ -95,18 +95,25 @@ class _ImagePageState extends State<ImagePage> {
     var sfwCategories = List<String>.from(client.sfw);
     var nsfwCategories = List<String>.from(client.nsfw);
 
+    void Function() createSetStateFunction(ImageMode mode, String category) {
+      return () {
+        client.mode = mode;
+        client.category = category;
+        Navigator.pop(context);
+        client.resetFuture();
+        resetDrawer();
+      };
+    }
+
     for (var category in sfwCategories) {
       var tile = ListTile(
         title: Text(category),
         onTap: () {
           setState(
-            () {
-              client.mode = ImageMode.sfw;
-              client.category = category;
-              Navigator.pop(context);
-              client.resetFuture();
-              resetDrawer();
-            },
+            createSetStateFunction(
+              ImageMode.sfw,
+              category,
+            ),
           );
         },
       );
@@ -118,13 +125,10 @@ class _ImagePageState extends State<ImagePage> {
         title: Text(category),
         onTap: () {
           setState(
-            () {
-              client.mode = ImageMode.nsfw;
-              client.category = category;
-              Navigator.pop(context);
-              client.resetFuture();
-              resetDrawer();
-            },
+            createSetStateFunction(
+              ImageMode.sfw,
+              category,
+            ),
           );
         },
       );
@@ -138,13 +142,12 @@ class _ImagePageState extends State<ImagePage> {
       await loadCategories();
     }
 
-    var display = client.mode == ImageMode.random ? "Current mode: random" : "Current mode: " + describeEnum(client.mode).toUpperCase() + " ${client.category}";
     return Drawer(
       child: ListView(
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: Colors.blue),
-            child: Text(display),
+            child: Text("Current mode: ${client.describeMode}"),
           ),
           ExpansionTile(
             title: const Text("SFW"),
@@ -169,7 +172,7 @@ class _ImagePageState extends State<ImagePage> {
           ),
           ListTile(
             title: const Text("Recent images"),
-            onTap: () => Navigator.pushNamed(context, "/image/recent_images"),
+            onTap: () => Navigator.pushNamed(context, "/recent_images"),
           )
         ],
       ),

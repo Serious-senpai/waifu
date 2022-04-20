@@ -29,7 +29,7 @@ class MainApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.dark,
       routes: {
-        "/image": (context) => ImagePage(client: client),
+        "/": (context) => ImagePage(client: client),
         "/recent_images": (context) => RecentImagesPage(client: client),
       },
     );

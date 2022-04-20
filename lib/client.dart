@@ -7,7 +7,7 @@ import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "http.dart";
 
-typedef ImageFutureData = Future<Uint8List?>;
+typedef ImageFuture = Future<Uint8List>;
 
 enum ImageMode {
   sfw,
@@ -22,6 +22,16 @@ class ImageClient {
 
   /// The current image category of the application, initially set to `waifu`
   String category = "waifu";
+
+  /// A string describing the current image mode
+  String get describeMode {
+    if (mode == ImageMode.random) {
+      return "random";
+    } else {
+      var modeString = describeEnum(mode).toUpperCase();
+      return "$modeString $category";
+    }
+  }
 
   /// [HTTPClient] to communicate with Haruka server as well as third-party ones
   final HTTPClient _client;
@@ -40,7 +50,7 @@ class ImageClient {
 
   /// The [Future] that actually fetches the images, initially set to `null`
   /// and will be initialized in [prepare]
-  ImageFutureData? future;
+  ImageFuture? future;
 
   /// Signal that [future] has completed, initially set to `true`.
   bool _futureCompleted = true;
@@ -55,15 +65,16 @@ class ImageClient {
     return imageClient;
   }
 
-  /// Clear the internal cache [imageDataCache]
+  /// Clear the internal cache
   void clearCache() => imageDataCache.clear();
 
   /// Initialize this [ImageClient] so that it is ready to fetch images.
   Future<void> prepare() async {
-    if (_ready.isSet) return;
+    resetFuture();
+    if (ready) return;
 
     var response = await _client.harukaRequest("GET", "/image/endpoints");
-    if (response.statusCode != 200) throw HTTPException(response);
+    raiseForStatus(response);
 
     var data = jsonDecode(response.body);
     sfw
@@ -72,8 +83,6 @@ class ImageClient {
     nsfw
       ..addAll(List<String>.from(data["nsfw"]))
       ..sort();
-
-    resetFuture();
 
     _ready.set();
   }
@@ -96,11 +105,11 @@ class ImageClient {
   }
 
   /// Fetch image of the current [category] and [mode]
-  ImageFutureData fetchImage() async {
+  ImageFuture fetchImage() async {
     await waitUntilReady();
     if (mode == ImageMode.random) {
       var response = await _client.harukaRequest("GET", "/collection");
-      if (response.statusCode != 200) return null;
+      raiseForStatus(response);
       var data = jsonDecode(response.body);
       var url = data["url"];
       return fetchAndCache(url);
@@ -111,18 +120,15 @@ class ImageClient {
       "category": category,
     };
     var response = await _client.harukaRequest("GET", "/image", params: params);
-    if (response.statusCode != 200) return null;
+    raiseForStatus(response);
 
     var data = jsonDecode(response.body);
     var host = data["host"];
     var apiUrl = data["url"];
 
-    try {
-      response = await _client.get(Uri.parse(apiUrl));
-      data = jsonDecode(response.body);
-    } catch (exc) {
-      return null;
-    }
+    response = await _client.get(Uri.parse(apiUrl));
+    raiseForStatus(response);
+    data = jsonDecode(response.body);
 
     String imageUrl;
 
@@ -134,25 +140,19 @@ class ImageClient {
         imageUrl = data["url"];
     }
 
-    try {
-      if (imageDataCache[imageUrl] != null) return imageDataCache[imageUrl];
+    var cached = imageDataCache[imageUrl];
+    if (cached != null) return cached;
 
-      return await fetchAndCache(imageUrl);
-    } catch (exc) {
-      return null;
-    }
+    return await fetchAndCache(imageUrl);
   }
 
   /// Get image data from its URL, cache the result and return it.
-  ImageFutureData fetchAndCache(String imageUrl) async {
+  ImageFuture fetchAndCache(String imageUrl) async {
     var response = await _client.get(Uri.parse(imageUrl));
-    if (response.statusCode == 200) {
-      var data = response.bodyBytes;
-      imageDataCache[imageUrl] = data;
-      return data;
-    } else {
-      throw HTTPException(response);
-    }
+    raiseForStatus(response);
+    var data = response.bodyBytes;
+    imageDataCache[imageUrl] = data;
+    return data;
   }
 
   /// Save the current image that [future] fetched. If [future] has not completed

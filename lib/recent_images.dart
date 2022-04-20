@@ -23,31 +23,29 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
           title: Image.memory(imageData),
           onTap: () {
             client.future = Future.value(imageData);
-            Navigator.pushNamed(context, "/image");
+            Navigator.pushNamed(context, "/");
           },
         ),
       );
     }
 
-    var scaffold = Scaffold(
-      appBar: AppBar(title: const Text("Recent images")),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Recent images"),
+        automaticallyImplyLeading: false,
+      ),
       body: ListView.builder(
         itemCount: children.length,
         itemBuilder: (context, index) => children[index],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, "/image");
+          Navigator.pushNamed(context, "/");
         },
         child: const Icon(Icons.home),
         tooltip: "Back",
         heroTag: null,
       ),
-    );
-
-    return WillPopScope(
-      child: scaffold,
-      onWillPop: () async => false,
     );
   }
 }

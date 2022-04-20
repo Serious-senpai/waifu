@@ -126,7 +126,7 @@ class _ImagePageState extends State<ImagePage> {
         onTap: () {
           setState(
             createSetStateFunction(
-              ImageMode.sfw,
+              ImageMode.nsfw,
               category,
             ),
           );

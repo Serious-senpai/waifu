@@ -1,0 +1,42 @@
+name: Build Test
+
+on: push
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Java
+      uses: actions/setup-java@v2
+      with:
+        distribution: microsoft
+        java-version: "11"
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: "2.10.5"
+
+    - name: View Flutter status
+      run: |
+        flutter --version
+        flutter doctor -v
+
+    - name: Initialize Flutter project
+      run: flutter create --platforms android .
+
+    - name: Test build
+      run: flutter build apk

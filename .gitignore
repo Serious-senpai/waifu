@@ -1,4 +1,5 @@
 .*
+!.github
 analysis_options.yaml
 haruka_client.iml
 pubspec.lock

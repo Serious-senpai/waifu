@@ -11,9 +11,6 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-
     steps:
 
     - name: Checkout repository
@@ -36,11 +33,7 @@ jobs:
         flutter doctor -v
 
     - name: Initialize Flutter project
-      run: |
-        cd ..
-        mv haruka-client haruka_client
-        cd haruka_client
-        flutter create --platforms android .
+      run: flutter create --platforms android .
 
     - name: Test build
       run: flutter build apk

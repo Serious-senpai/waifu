@@ -36,7 +36,11 @@ jobs:
         flutter doctor -v
 
     - name: Initialize Flutter project
-      run: flutter create --platforms android .
+      run: |
+        cd ..
+        mv haruka-client haruka_client
+        cd haruka_client
+        flutter create --platforms android .
 
     - name: Test build
       run: flutter build apk

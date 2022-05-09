@@ -1,8 +1,8 @@
-import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:fluttertoast/fluttertoast.dart";
 
 import "client.dart";
+import "widgets.dart";
 
 class ImagePage extends StatefulWidget {
   final ImageClient client;
@@ -13,9 +13,6 @@ class ImagePage extends StatefulWidget {
 }
 
 class _ImagePageState extends State<ImagePage> {
-  /// A transparent [SizedBox] with height of 10.0
-  final seperator = const SizedBox(height: 10.0);
-
   /// The [GlobalKey] to open/close the drawer
   final _drawerKey = GlobalKey<ScaffoldState>(debugLabel: "_drawerKey");
 
@@ -34,46 +31,14 @@ class _ImagePageState extends State<ImagePage> {
   /// UI flag for buttons array
   bool _buttonExpanded = false;
 
-  /// Display a loading indicator above [content]
-  Widget loadingIndicator(String content) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(
-          width: 60,
-          height: 60,
-          child: CircularProgressIndicator(),
-        ),
-        seperator,
-        Text(content),
-      ],
-    );
-  }
-
-  /// Display an error indicator with error message [content]
-  Widget errorIndicator(String content) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(
-          width: 60,
-          height: 60,
-          child: Icon(Icons.highlight_off, size: 60),
-        ),
-        seperator,
-        Text(content),
-      ],
-    );
-  }
-
   /// Process the future [snapshot] and turn it into a [Widget]
   Widget processImageFuture(BuildContext ctx, AsyncSnapshot snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
-      return snapshot.hasData ? Image.memory(snapshot.data) : errorIndicator("Cannot load this image!");
+      return snapshot.hasData ? Image.memory(snapshot.data) : errorIndicator(content: "Cannot load this image!");
     } else if (snapshot.connectionState == ConnectionState.waiting) {
-      return loadingIndicator("Loading image");
+      return loadingIndicator(content: "Loading image");
     } else {
-      return errorIndicator("Invalid state: ${snapshot.connectionState}");
+      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
     }
   }
 
@@ -169,6 +134,10 @@ class _ImagePageState extends State<ImagePage> {
                 },
               );
             },
+          ),
+          ListTile(
+            title: const Text("SFW images collection"),
+            onTap: () => Navigator.pushNamed(context, "/collection"),
           ),
           ListTile(
             title: const Text("Recent images"),

@@ -1,12 +1,14 @@
-import "dart:async";
-
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 
 import "client.dart";
+import "collection.dart";
 import "image.dart";
 import "recent_images.dart";
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
   var client = await ImageClient.create();
   runApp(MainApp(client: client));
 }
@@ -31,6 +33,7 @@ class MainApp extends StatelessWidget {
       routes: {
         "/": (context) => ImagePage(client: client),
         "/recent_images": (context) => RecentImagesPage(client: client),
+        "/collection": (context) => CollectionPage(client: client),
       },
     );
   }

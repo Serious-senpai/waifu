@@ -1,3 +1,4 @@
+import "dart:async";
 import "dart:convert";
 import "dart:typed_data";
 
@@ -8,6 +9,7 @@ import "package:image_gallery_saver/image_gallery_saver.dart";
 import "http.dart";
 
 typedef ImageFuture = Future<Uint8List>;
+typedef ImageCompleter = Completer<Uint8List>;
 
 enum ImageMode {
   sfw,
@@ -44,6 +46,20 @@ class ImageClient {
 
   /// List of NSFW categories
   final nsfw = <String>[];
+
+  /// List of SFW images in the collection
+  final collection = <String>[];
+
+  int __collectionPointer = 0;
+
+  int get _collectionPointer {
+    if (__collectionPointer == collection.length - 1) {
+      __collectionPointer = 0;
+    } else {
+      __collectionPointer++;
+    }
+    return __collectionPointer;
+  }
 
   /// [Event] signal that will be set when this [ImageClient] is ready.
   final _ready = Event();
@@ -83,6 +99,9 @@ class ImageClient {
     nsfw
       ..addAll(List<String>.from(data["nsfw"]))
       ..sort();
+
+    response = await _client.harukaRequest("GET", "/collection/list");
+    collection.addAll(List<String>.from(jsonDecode(response.body)));
 
     _ready.set();
   }
@@ -146,11 +165,33 @@ class ImageClient {
     return await fetchAndCache(imageUrl);
   }
 
-  /// Get image data from its URL, cache the result and return it.
-  ImageFuture fetchAndCache(String imageUrl) async {
+  /// Get an image from the collection
+  ///
+  /// This operation does not cache the image data
+  ImageFuture getFromCollection() async {
+    var filename = collection[_collectionPointer];
+    var response = await _client.harukaRequest("GET", "/assets/images/$filename");
+    raiseForStatus(response);
+    return response.bodyBytes;
+  }
+
+  void backwardCollectionPointer(int backward) {
+    __collectionPointer -= backward;
+    if (__collectionPointer < 0) {
+      __collectionPointer += collection.length;
+    }
+  }
+
+  /// Get image data from its URL
+  ImageFuture fetch(String imageUrl) async {
     var response = await _client.get(Uri.parse(imageUrl));
     raiseForStatus(response);
-    var data = response.bodyBytes;
+    return response.bodyBytes;
+  }
+
+  /// Get image data from its URL, cache the result and return it.
+  ImageFuture fetchAndCache(String imageUrl) async {
+    var data = await fetch(imageUrl);
     imageDataCache[imageUrl] = data;
     return data;
   }

@@ -97,6 +97,7 @@ class _CollectionPageState extends State<CollectionPage> {
       rows.add(Row(children: [first, second]));
     }
 
+    var counter = 0;
     var scaffold = Scaffold(
       body: NotificationListener<ScrollEndNotification>(
         child: ListView(children: rows),
@@ -104,9 +105,13 @@ class _CollectionPageState extends State<CollectionPage> {
           var metrics = notification.metrics;
           if (metrics.maxScrollExtent > 0) {
             if (metrics.pixels == metrics.minScrollExtent) {
+              counter--;
               client.backwardCollectionPointer(imagesLimit);
-              resetFutures();
             } else if (metrics.pixels == metrics.maxScrollExtent) {
+              counter++;
+            }
+
+            if (counter.abs() > 1) {
               resetFutures();
             }
           }

@@ -9,6 +9,13 @@ import "recent_images.dart";
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+  SystemChrome.setSystemUIChangeCallback(
+    (systemOverlaysAreVisible) async {
+      await Future.delayed(const Duration(seconds: 3));
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    },
+  );
+
   var client = await ImageClient.create();
   runApp(MainApp(client: client));
 }

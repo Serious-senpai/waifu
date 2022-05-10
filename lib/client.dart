@@ -53,12 +53,13 @@ class ImageClient {
   int __collectionPointer = 0;
 
   int get _collectionPointer {
+    var current = __collectionPointer;
     if (__collectionPointer == collection.length - 1) {
       __collectionPointer = 0;
     } else {
       __collectionPointer++;
     }
-    return __collectionPointer;
+    return current;
   }
 
   /// [Event] signal that will be set when this [ImageClient] is ready.

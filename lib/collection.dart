@@ -14,25 +14,26 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
+  /// The underlying [ImageClient]
   ImageClient get client => widget.client;
 
+  /// Futures which are used to fetch images
   final _futureList = <ImageFuture>[];
 
-  bool _allFutureCompleted = true;
-
+  /// Rebuild this widget
   void rebuildSelf() => setState(() {});
 
-  void resetFutures() {
-    if (!_allFutureCompleted) return;
+  /// UI flag for buttons array
+  bool _buttonExpanded = false;
 
+  /// Reset all futures
+  void resetFutures() {
     _futureList.clear();
-    _allFutureCompleted = false;
     for (int i = 0; i < imagesLimit; i++) {
       var future = client.getFromCollection();
       future.whenComplete(rebuildSelf);
       _futureList.add(future);
     }
-    Future.wait(_futureList).whenComplete(() => _allFutureCompleted = true);
   }
 
   @override
@@ -56,19 +57,23 @@ class _CollectionPageState extends State<CollectionPage> {
                 height: edge,
                 fit: BoxFit.cover,
               )
-            : errorIndicator(
+            : SizedBox(
+                child: errorIndicator(size: 20),
                 width: edge,
                 height: edge,
               );
       } else if (snapshot.connectionState == ConnectionState.waiting) {
-        return loadingIndicator(
+        return SizedBox(
+          child: loadingIndicator(size: 20),
           width: edge,
           height: edge,
-          scale: 0.3,
         );
       } else {
-        return errorIndicator(
-          content: snapshot.connectionState.toString(),
+        return SizedBox(
+          child: errorIndicator(
+            content: snapshot.connectionState.toString(),
+            size: 20,
+          ),
           width: edge,
           height: edge,
         );
@@ -97,35 +102,58 @@ class _CollectionPageState extends State<CollectionPage> {
       rows.add(Row(children: [first, second]));
     }
 
-    var counter = 0;
     var scaffold = Scaffold(
-      body: NotificationListener<ScrollEndNotification>(
-        child: ListView(children: rows),
-        onNotification: (notification) {
-          var metrics = notification.metrics;
-          if (metrics.maxScrollExtent > 0) {
-            if (metrics.pixels == metrics.minScrollExtent) {
-              counter--;
-              client.backwardCollectionPointer(imagesLimit);
-            } else if (metrics.pixels == metrics.maxScrollExtent) {
-              counter++;
-            }
-
-            if (counter.abs() > 1) {
-              resetFutures();
-            }
-          }
-          return true;
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, "/");
-        },
-        child: const Icon(Icons.home),
-        tooltip: "Back",
-        heroTag: null,
-      ),
+      body: ListView(children: rows),
+      floatingActionButton: _buttonExpanded
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    resetFutures();
+                    rebuildSelf();
+                  },
+                  child: const Icon(
+                    Icons.chevron_right,
+                  ),
+                  tooltip: "Next",
+                  heroTag: null,
+                ),
+                seperator,
+                FloatingActionButton(
+                  onPressed: () {
+                    client.backwardCollectionPointer(2 * imagesLimit);
+                    resetFutures();
+                    rebuildSelf();
+                  },
+                  child: const Icon(
+                    Icons.chevron_left,
+                  ),
+                  tooltip: "Back",
+                  heroTag: null,
+                ),
+                seperator,
+                FloatingActionButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, "/");
+                  },
+                  child: const Icon(Icons.home),
+                  tooltip: "Home",
+                  heroTag: null,
+                ),
+                seperator,
+                FloatingActionButton(
+                  onPressed: () => setState(() => _buttonExpanded = false),
+                  child: const Icon(Icons.expand_more),
+                  heroTag: null,
+                ),
+              ],
+            )
+          : FloatingActionButton(
+              onPressed: () => setState(() => _buttonExpanded = true),
+              child: const Icon(Icons.expand_less),
+              heroTag: null,
+            ),
     );
 
     return WillPopScope(

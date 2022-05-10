@@ -1,13 +1,13 @@
 import "package:flutter/material.dart";
 
-/// A transparent [SizedBox] with height of 10.0
-const seperator = SizedBox(height: 10.0);
+/// A transparent [SizedBox] with a width and height of 10.0
+const seperator = SizedBox(width: 10.0, height: 10.0);
 
 /// Display a loading indicator above [content]
-Widget loadingIndicator({String? content, double width = 100, double height = 100, double scale = 0.6}) {
+Widget loadingIndicator({String? content, double size = 60}) {
   var sizedBox = SizedBox(
-    width: width * scale,
-    height: height * scale,
+    width: size,
+    height: size,
     child: const CircularProgressIndicator(),
   );
 
@@ -21,22 +21,18 @@ Widget loadingIndicator({String? content, double width = 100, double height = 10
     );
   }
 
-  return SizedBox(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: children,
-    ),
-    width: width,
-    height: height,
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: children,
   );
 }
 
 /// Display an error indicator with error message [content]
-Widget errorIndicator({String? content, double width = 100, double height = 100, double scale = 0.6}) {
+Widget errorIndicator({String? content, double size = 60}) {
   var sizedBox = SizedBox(
-    width: width * scale,
-    height: height * scale,
-    child: const Icon(Icons.highlight_off, size: 60),
+    width: size,
+    height: size,
+    child: Icon(Icons.highlight_off, size: size),
   );
 
   var children = <Widget>[sizedBox];

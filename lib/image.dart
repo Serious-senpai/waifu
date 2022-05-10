@@ -201,11 +201,7 @@ class _ImagePageState extends State<ImagePage> {
               children: [
                 seperator,
                 seperator,
-                const SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(),
-                ),
+                loadingIndicator(size: 30),
               ],
             ),
           );

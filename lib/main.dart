@@ -38,7 +38,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Haruka Client",
+      title: "Waifu Generator",
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.green,

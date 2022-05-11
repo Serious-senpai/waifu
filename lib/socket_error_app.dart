@@ -10,7 +10,7 @@ class SocketExceptionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Haruka Client",
+      title: "HWaifu Generator",
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.green,

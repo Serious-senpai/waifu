@@ -1,7 +1,7 @@
 .*
 !.github
 analysis_options.yaml
-haruka_client.iml
+waifu_generator.iml
 pubspec.lock
 run.bat
 

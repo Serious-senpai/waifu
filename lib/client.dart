@@ -52,6 +52,8 @@ class ImageClient {
 
   int __collectionPointer = 0;
 
+  final __collectionUpdateLock = Lock();
+
   int get _collectionPointer {
     var current = __collectionPointer;
     if (__collectionPointer == collection.length - 1) {
@@ -101,8 +103,7 @@ class ImageClient {
       ..addAll(List<String>.from(data["nsfw"]))
       ..sort();
 
-    response = await _client.harukaRequest("GET", "/collection/list");
-    collection.addAll(List<String>.from(jsonDecode(response.body)));
+    await updateCollection();
 
     _ready.set();
   }
@@ -122,6 +123,21 @@ class ImageClient {
     _futureCompleted = false;
     future = fetchImage();
     future?.whenComplete(() => _futureCompleted = true);
+  }
+
+  /// Update the internal SFW images collection, return `true` on success
+  Future<bool> updateCollection() async {
+    var response = await _client.harukaRequest("GET", "/collection/list");
+    try {
+      if (response.statusCode == 200) {
+        collection.clear();
+        collection.addAll(List<String>.from(jsonDecode(response.body)));
+        return true;
+      }
+    } catch (e) {
+      null;
+    }
+    return false;
   }
 
   /// Fetch image of the current [category] and [mode]
@@ -170,6 +186,17 @@ class ImageClient {
   ///
   /// This operation does not cache the image data
   ImageFuture getFromCollection() async {
+    await __collectionUpdateLock.run(
+      () async {
+        while (collection.isEmpty) {
+          var status = await updateCollection();
+          if (!status) {
+            await Future.delayed(const Duration(seconds: 30));
+          }
+        }
+      },
+    );
+
     var filename = collection[_collectionPointer];
     var response = await _client.harukaRequest("GET", "/assets/images/$filename");
     raiseForStatus(response);

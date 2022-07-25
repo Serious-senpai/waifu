@@ -1,4 +1,6 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
+
 import "package:fluttertoast/fluttertoast.dart";
 
 import "client.dart";
@@ -34,7 +36,7 @@ class _ImagePageState extends State<ImagePage> {
   /// Process the future [snapshot] and turn it into a [Widget]
   Widget processImageFuture(BuildContext ctx, AsyncSnapshot snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
-      return snapshot.hasData ? Image.memory(snapshot.data) : errorIndicator(content: "Cannot load this image!");
+      return snapshot.hasData ? Image.memory(snapshot.data.data) : errorIndicator(content: "Cannot load this image!");
     } else if (snapshot.connectionState == ConnectionState.waiting) {
       return loadingIndicator(content: "Loading image");
     } else {
@@ -150,36 +152,72 @@ class _ImagePageState extends State<ImagePage> {
 
   /// Create an array of [FloatingActionButton]
   List<Widget> createButtonArray() {
-    List<Widget> buttons;
+    List<Widget> buttons = [];
     if (_buttonExpanded) {
-      buttons = [
-        FloatingActionButton(
-          onPressed: () => _drawerKey.currentState?.openDrawer(),
-          child: const Icon(Icons.list),
-          tooltip: "Open menu",
-          heroTag: null,
-        ),
-        seperator,
-        FloatingActionButton(
-          onPressed: saveCurrentImage,
-          child: const Icon(Icons.download),
-          tooltip: "Save image",
-          heroTag: null,
-        ),
-        seperator,
-        FloatingActionButton(
-          onPressed: () => setState(client.resetFuture),
-          child: const Icon(Icons.refresh),
-          tooltip: "Find another image",
-          heroTag: null,
-        ),
-        seperator,
-        FloatingActionButton(
-          onPressed: () => setState(() => _buttonExpanded = false),
-          child: const Icon(Icons.expand_more),
-          heroTag: null,
-        ),
-      ];
+      if (client.currentImage != null) {
+        buttons.addAll(
+          [
+            FloatingActionButton(
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder: (BuildContext ctx) => AlertDialog(
+                    title: const Text("Image URL"),
+                    content: Text(client.currentImage!.url),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text("OK"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: client.currentImage!.url));
+                          Fluttertoast.showToast(msg: "Copied to clipboard");
+                        },
+                        child: const Text("Copy"),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Icon(Icons.info),
+              tooltip: "Show source",
+              heroTag: null,
+            ),
+            seperator,
+          ],
+        );
+      }
+      buttons.addAll(
+        [
+          FloatingActionButton(
+            onPressed: () => _drawerKey.currentState?.openDrawer(),
+            child: const Icon(Icons.list),
+            tooltip: "Open menu",
+            heroTag: null,
+          ),
+          seperator,
+          FloatingActionButton(
+            onPressed: saveCurrentImage,
+            child: const Icon(Icons.download),
+            tooltip: "Save image",
+            heroTag: null,
+          ),
+          seperator,
+          FloatingActionButton(
+            onPressed: () => setState(client.resetFuture),
+            child: const Icon(Icons.refresh),
+            tooltip: "Find another image",
+            heroTag: null,
+          ),
+          seperator,
+          FloatingActionButton(
+            onPressed: () => setState(() => _buttonExpanded = false),
+            child: const Icon(Icons.expand_more),
+            heroTag: null,
+          ),
+        ],
+      );
     } else {
       buttons = [
         FloatingActionButton(

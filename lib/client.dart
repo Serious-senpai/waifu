@@ -8,8 +8,14 @@ import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "http.dart";
 
-typedef ImageFuture = Future<Uint8List>;
-typedef ImageCompleter = Completer<Uint8List>;
+class ImageData {
+  final Uint8List data;
+  final String url;
+
+  ImageData(this.data, this.url);
+}
+
+typedef ImageFuture = Future<ImageData>;
 
 enum ImageMode {
   sfw,
@@ -39,7 +45,7 @@ class ImageClient {
   final HTTPClient _client;
 
   /// Cache for storing fetched images with URLs as keys
-  final imageDataCache = <String, Uint8List>{};
+  final imageDataCache = <String, ImageData>{};
 
   /// List of SFW categories
   final sfw = <String>[];
@@ -70,6 +76,9 @@ class ImageClient {
   /// The [Future] that actually fetches the images, initially set to `null`
   /// and will be initialized in [prepare]
   ImageFuture? future;
+
+  /// The current image
+  ImageData? currentImage;
 
   /// Signal that [future] has completed, initially set to `true`.
   bool _futureCompleted = true;
@@ -148,7 +157,7 @@ class ImageClient {
       raiseForStatus(response);
       var data = jsonDecode(response.body);
       var url = data["url"];
-      return fetchAndCache(url);
+      return currentImage = await fetchAndCache(url);
     }
 
     var params = {
@@ -179,7 +188,7 @@ class ImageClient {
     var cached = imageDataCache[imageUrl];
     if (cached != null) return cached;
 
-    return await fetchAndCache(imageUrl);
+    return currentImage = await fetchAndCache(imageUrl);
   }
 
   /// Get an image from the collection
@@ -200,7 +209,7 @@ class ImageClient {
     var filename = collection[_collectionPointer];
     var response = await _client.harukaRequest("GET", "/assets/images/$filename");
     raiseForStatus(response);
-    return response.bodyBytes;
+    return ImageData(response.bodyBytes, _client.harukaHost + "/assets/images/$filename");
   }
 
   void backwardCollectionPointer(int backward) {
@@ -214,7 +223,7 @@ class ImageClient {
   ImageFuture fetch(String imageUrl) async {
     var response = await _client.get(Uri.parse(imageUrl));
     raiseForStatus(response);
-    return response.bodyBytes;
+    return ImageData(response.bodyBytes, imageUrl);
   }
 
   /// Get image data from its URL, cache the result and return it.
@@ -229,12 +238,9 @@ class ImageClient {
   ///
   /// Returns `true` on success and `false` otherwise.
   Future<bool> saveCurrentImage() async {
-    if (future != null) {
-      var data = await future;
-      if (data != null) {
-        var result = await ImageGallerySaver.saveImage(data);
-        return result["isSuccess"];
-      }
+    if (currentImage != null) {
+      var result = await ImageGallerySaver.saveImage(currentImage!.data);
+      return result["isSuccess"];
     }
     return false;
   }

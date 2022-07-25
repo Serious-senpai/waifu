@@ -20,7 +20,7 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
     for (var imageData in client.imageDataCache.values) {
       children.add(
         ListTile(
-          title: Image.memory(imageData),
+          title: Image.memory(imageData.data),
           onTap: () {
             client.future = Future.value(imageData);
             Navigator.pushNamed(context, "/");

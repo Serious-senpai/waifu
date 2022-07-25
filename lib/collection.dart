@@ -52,7 +52,7 @@ class _CollectionPageState extends State<CollectionPage> {
       if (snapshot.connectionState == ConnectionState.done) {
         return snapshot.hasData
             ? Image.memory(
-                snapshot.data,
+                snapshot.data.data,
                 width: edge,
                 height: edge,
                 fit: BoxFit.cover,
@@ -87,8 +87,10 @@ class _CollectionPageState extends State<CollectionPage> {
             future: future,
             builder: futureBuilder,
           ),
-          onTap: () {
+          onTap: () async {
             client.future = future;
+            var result = await future;
+            client.currentImage = ImageData(result.data, result.url);
             Navigator.pushNamed(context, "/");
           },
         ),

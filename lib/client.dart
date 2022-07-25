@@ -209,7 +209,7 @@ class ImageClient {
     var filename = collection[_collectionPointer];
     var response = await _client.harukaRequest("GET", "/assets/images/$filename");
     raiseForStatus(response);
-    return ImageData(response.bodyBytes, _client.harukaHost + "/assets/images/$filename");
+    return ImageData(response.bodyBytes, "https://" + _client.harukaHost + "/assets/images/$filename");
   }
 
   void backwardCollectionPointer(int backward) {

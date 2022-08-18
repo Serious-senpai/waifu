@@ -86,8 +86,8 @@ class ImageClient {
   ImageClient._(HTTPClient httpClient) : _client = httpClient;
 
   /// Create a new [ImageClient]
-  static Future<ImageClient> create() async {
-    var httpClient = await HTTPClient.create();
+  static ImageClient create() {
+    var httpClient = HTTPClient();
     var imageClient = ImageClient._(httpClient);
     imageClient.prepare();
     return imageClient;
@@ -209,7 +209,7 @@ class ImageClient {
     var filename = collection[_collectionPointer];
     var response = await _client.harukaRequest("GET", "/assets/images/$filename");
     raiseForStatus(response);
-    return ImageData(response.bodyBytes, "https://" + _client.harukaHost + "/assets/images/$filename");
+    return ImageData(response.bodyBytes, "https://" + HTTPClient.harukaHost + "/assets/images/$filename");
   }
 
   void backwardCollectionPointer(int backward) {

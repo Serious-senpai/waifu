@@ -33,7 +33,7 @@ class HTTPClient {
   final Client _client;
 
   /// The Haruka server this client is currently connected to
-  final String harukaHost;
+  static const String harukaHost = "haruka39.herokuapp.com";
 
   /// Haruka's current avatar
   late Uint8List avatar;
@@ -43,17 +43,7 @@ class HTTPClient {
 
   final _ready = Event();
 
-  HTTPClient._(this._client, this.harukaHost);
-
-  /// Create a new [HTTPClient] that connects to an appropriate [harukaHost]
-  static Future<HTTPClient> create() async {
-    var client = Client();
-    var response = await client.get(Uri.https("haruka39.herokuapp.com", "/"));
-    var harukaHost = response.statusCode == 200 ? "haruka39.herokuapp.com" : "haruka39-clone.herokuapp.com";
-
-    var httpClient = HTTPClient._(client, harukaHost);
-    return httpClient;
-  }
+  HTTPClient() : _client = Client();
 
   /// Whether this client is ready
   bool get ready => _ready.isSet;

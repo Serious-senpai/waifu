@@ -1,4 +1,4 @@
-name: Build Test
+name: Flutter Build Test
 
 on: push
 
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    name: Build
+    name: Test Build (Release)
     runs-on: ubuntu-latest
 
     steps:

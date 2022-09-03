@@ -4,14 +4,14 @@ import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 
 import "client.dart";
-import "collection.dart";
-import "image.dart";
+import "images.dart";
 import "recent_images.dart";
-import "socket_error_app.dart";
 
-void main() async {
+Future<void> main() async {
   try {
-    var client = await ImageClient.create();
+    var client = ImageClient();
+    await client.prepare();
+
     WidgetsFlutterBinding.ensureInitialized();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     SystemChrome.setSystemUIChangeCallback(
@@ -22,21 +22,29 @@ void main() async {
     );
 
     runApp(MainApp(client: client));
-  } on SocketException catch (exception) {
-    runApp(SocketExceptionApp(exception: exception));
+  } on SocketException {
+    runApp(
+      const Scaffold(
+        body: Center(
+          child: Text("Please check your Internet connection and try again"),
+        ),
+      ),
+    );
   }
 }
 
 class MainApp extends StatelessWidget {
   final ImageClient client;
+  final ImageCategory category;
 
-  const MainApp({
-    Key? key,
-    required this.client,
-  }) : super(key: key);
+  MainApp({Key? key, required this.client})
+      : category = ImageCategory(client),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    category.resetFuture();
+
     return MaterialApp(
       title: "Waifu Generator",
       darkTheme: ThemeData(
@@ -45,9 +53,8 @@ class MainApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.dark,
       routes: {
-        "/": (context) => ImagePage(client: client),
-        "/recent_images": (context) => RecentImagesPage(client: client),
-        "/collection": (context) => CollectionPage(client: client),
+        "/": (context) => ImagesPage(client: client, category: category),
+        "/recent-images": (context) => RecentImagesPage(client: client, category: category),
       },
     );
   }

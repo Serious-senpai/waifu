@@ -1,9 +1,13 @@
-.*
-!.github
+.dart_tool
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea
+.metadata
+.packages
 analysis_options.yaml
-waifu_generator.iml
 pubspec.lock
 run.bat
+waifu.iml
 
 build
 test

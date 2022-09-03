@@ -4,7 +4,9 @@ import "client.dart";
 
 class RecentImagesPage extends StatefulWidget {
   final ImageClient client;
-  const RecentImagesPage({required this.client, Key? key}) : super(key: key);
+  final ImageCategory category;
+
+  const RecentImagesPage({Key? key, required this.client, required this.category}) : super(key: key);
 
   @override
   State<RecentImagesPage> createState() => _RecentImagesPageState();
@@ -12,17 +14,18 @@ class RecentImagesPage extends StatefulWidget {
 
 class _RecentImagesPageState extends State<RecentImagesPage> {
   ImageClient get client => widget.client;
+  ImageCategory get category => widget.category;
 
   @override
   Widget build(BuildContext context) {
     var children = <Widget>[];
 
-    for (var imageData in client.imageDataCache.values) {
+    for (var imageData in client.history.values) {
       children.add(
         ListTile(
-          title: Image.memory(imageData.data),
+          title: Image.memory(imageData),
           onTap: () {
-            client.future = Future.value(imageData);
+            category.inProgress = Future.value(imageData);
             Navigator.pushNamed(context, "/");
           },
         ),
@@ -42,9 +45,9 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
         onPressed: () {
           Navigator.pushNamed(context, "/");
         },
-        child: const Icon(Icons.home),
         tooltip: "Back",
         heroTag: null,
+        child: const Icon(Icons.home),
       ),
     );
   }

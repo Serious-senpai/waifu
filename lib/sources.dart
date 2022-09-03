@@ -34,8 +34,9 @@ class WaifuPics implements ImageSource {
     var response = await client.get(Uri.https(baseUrl, "/endpoints"));
     var data = jsonDecode(response.body);
 
-    sfw.addAll(data["sfw"]);
-    nsfw.addAll(data["nsfw"]);
+    var sfwCategories = List<String>.from(data["sfw"]), nsfwCategories = List<String>.from(data["nsfw"]);
+    sfw.addAll(sfwCategories);
+    nsfw.addAll(nsfwCategories);
   }
 
   @override
@@ -62,9 +63,10 @@ class WaifuIm implements ImageSource {
     var response = await client.get(Uri.https(baseUrl, "/endpoints"));
     var data = jsonDecode(response.body);
 
-    sfw.addAll(data["versatile"]);
-    nsfw.addAll(data["versatile"]);
-    nsfw.addAll(data["nsfw"]);
+    var versatileCategories = List<String>.from(data["versatile"]), nsfwCategories = List<String>.from(data["nsfw"]);
+    sfw.addAll(versatileCategories);
+    nsfw.addAll(versatileCategories);
+    nsfw.addAll(nsfwCategories);
   }
 
   @override
@@ -75,13 +77,13 @@ class WaifuIm implements ImageSource {
         "/random",
         {
           "selected_tags": category,
-          "is_nsfw": mode == "nsfw",
+          "is_nsfw": mode == "nsfw" ? "true" : "false",
         },
       ),
     );
     var data = jsonDecode(response.body);
 
-    return data["url"];
+    return data["images"][0]["url"];
   }
 }
 

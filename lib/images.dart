@@ -23,6 +23,8 @@ class _ImagesPageState extends State<ImagesPage> {
 
   bool _buttonsExpanded = false;
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+
   /// Process the future [snapshot] and turn it into a [Widget]
   Widget processImageFuture(BuildContext ctx, AsyncSnapshot<Uint8List> snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
@@ -33,6 +35,9 @@ class _ImagesPageState extends State<ImagesPage> {
       return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
     }
   }
+
+  void openDrawer() => _scaffoldKey.currentState!.openDrawer();
+  void closeDrawer() => _scaffoldKey.currentState!.closeDrawer();
 
   /// Create the [Drawer] for the [Scaffold]
   Drawer createDrawer() {
@@ -47,7 +52,7 @@ class _ImagesPageState extends State<ImagesPage> {
         category.category = imageCategory;
         category.mode = imageMode;
 
-        Scaffold.of(context).closeDrawer();
+        closeDrawer();
         category.resetFuture();
       };
     }
@@ -93,7 +98,7 @@ class _ImagesPageState extends State<ImagesPage> {
   }
 
   /// Create an array of [FloatingActionButton]
-  List<Widget> createButtonArray() {
+  List<Widget> createButtonArray(BuildContext context) {
     List<Widget> buttons = [];
     if (_buttonsExpanded) {
       // Add the "info" button
@@ -136,11 +141,12 @@ class _ImagesPageState extends State<ImagesPage> {
       buttons.addAll(
         [
           FloatingActionButton(
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            onPressed: openDrawer,
             tooltip: "Open menu",
             heroTag: null,
             child: const Icon(Icons.list),
           ),
+          seperator,
           FloatingActionButton(
             onPressed: () async {
               var result = await client.saveCurrentImage();
@@ -180,6 +186,7 @@ class _ImagesPageState extends State<ImagesPage> {
   @override
   Widget build(BuildContext context) {
     var scaffold = Scaffold(
+      key: _scaffoldKey,
       drawer: createDrawer(),
       body: Center(
         child: FutureBuilder(
@@ -189,7 +196,7 @@ class _ImagesPageState extends State<ImagesPage> {
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
-        children: createButtonArray(),
+        children: createButtonArray(context),
       ),
     );
 

@@ -60,7 +60,7 @@ class WaifuIm implements ImageSource {
 
   @override
   Future<void> populateCategories(Client client) async {
-    var response = await client.get(Uri.https(baseUrl, "/tags/?full=true"));
+    var response = await client.get(Uri.https(baseUrl, "/tags", {"full": "true"}));
     var data = jsonDecode(response.body);
 
     for (var tag in data["versatile"]) {

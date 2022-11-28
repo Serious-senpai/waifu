@@ -60,13 +60,17 @@ class WaifuIm implements ImageSource {
 
   @override
   Future<void> populateCategories(Client client) async {
-    var response = await client.get(Uri.https(baseUrl, "/endpoints"));
+    var response = await client.get(Uri.https(baseUrl, "/tags/?full=true"));
     var data = jsonDecode(response.body);
 
-    var versatileCategories = List<String>.from(data["versatile"]), nsfwCategories = List<String>.from(data["nsfw"]);
-    sfw.addAll(versatileCategories);
-    nsfw.addAll(versatileCategories);
-    nsfw.addAll(nsfwCategories);
+    for (var tag in data["versatile"]) {
+      sfw.add(tag["name"]);
+      nsfw.add(tag["name"]);
+    }
+
+    for (var tag in data["nsfw"]) {
+      nsfw.add(tag["name"]);
+    }
   }
 
   @override
@@ -74,9 +78,9 @@ class WaifuIm implements ImageSource {
     var response = await client.get(
       Uri.https(
         baseUrl,
-        "/random",
+        "/search",
         {
-          "selected_tags": category,
+          "included_tags": category,
           "is_nsfw": mode == "nsfw" ? "true" : "false",
         },
       ),

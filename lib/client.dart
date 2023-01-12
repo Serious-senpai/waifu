@@ -69,7 +69,8 @@ class ImageClient {
 
   Future<String> getImageUrl(String category, {required String mode}) async {
     await waitUntilReady();
-    var sources = mode == "sfw" ? sfw[category] : nsfw[category], index = Random().nextInt(sources!.length);
+    var sources = mode == "sfw" ? sfw[category] : nsfw[category];
+    var index = Random().nextInt(sources!.length);
     var source = sources[index];
     return source.getImageUrl(category, mode: mode, client: _client);
   }

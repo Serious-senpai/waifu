@@ -60,7 +60,12 @@ class WaifuIm implements ImageSource {
 
   @override
   Future<void> populateCategories(Client client) async {
-    var response = await client.get(Uri.https(baseUrl, "/tags", {"full": "true"}));
+    var response = await client.get(
+      Uri.https(baseUrl, "/tags", {"full": "true"}),
+      headers: {
+        "Accept-Version": "v4",
+      },
+    );
     var data = jsonDecode(response.body);
 
     for (var tag in data["versatile"]) {
@@ -84,6 +89,9 @@ class WaifuIm implements ImageSource {
           "is_nsfw": mode == "nsfw" ? "true" : "false",
         },
       ),
+      headers: {
+        "Accept-Version": "v4",
+      },
     );
     var data = jsonDecode(response.body);
 

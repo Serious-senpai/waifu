@@ -5,6 +5,7 @@ import "package:flutter/material.dart";
 import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
+import "errors.dart";
 import "sources.dart";
 import "utils.dart";
 
@@ -92,8 +93,12 @@ class ImageFetchingProcessor {
   }
 
   void resetProgress({bool forced = false, ImageData? customData}) {
-    if (!inProgress.isCompleted && !forced) {
-      return;
+    if (!inProgress.isCompleted) {
+      if (forced) {
+        inProgress.completeError(RequestCancelledException);
+      } else {
+        return;
+      }
     }
 
     inProgress = Completer<ImageData>();
@@ -101,7 +106,9 @@ class ImageFetchingProcessor {
       var future = client.fetchImage();
       future.then(
         (data) {
-          inProgress.complete(data);
+          if (!inProgress.isCompleted) {
+            inProgress.complete(data);
+          }
           return data;
         },
       );

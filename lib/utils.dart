@@ -52,7 +52,7 @@ Widget errorIndicator({String? content, double size = 60}) {
   );
 }
 
-/// Request for a permission of not granted
+/// Request for a permission if not granted
 Future<bool> requestPermission(Permission permission) async {
   var request = await permission.request();
   return request.isGranted;

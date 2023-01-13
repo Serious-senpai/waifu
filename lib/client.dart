@@ -1,98 +1,122 @@
+import "dart:async";
 import "dart:math";
-import "dart:typed_data";
 
-import "package:async_locks/async_locks.dart";
+import "package:flutter/material.dart";
 import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "sources.dart";
+import "utils.dart";
 
-class ImageCategory {
-  /// The [ImageClient] to use for searching images
-  final ImageClient client;
-
-  /// The current category
-  String category;
-
-  /// The current image mode, must be "sfw" or "nsfw"
-  String mode;
-
-  /// A string describe the current mode
-  String get describeMode => "${mode.toUpperCase()}/$category";
-
-  /// The current image fetching progress
-  late Future<Uint8List> inProgress;
-
-  /// Initialize this [ImageCategory] with an [ImageClient]
-  ImageCategory(this.client)
-      : category = client.sfw.keys.first,
-        mode = "sfw";
-
-  void resetFuture() {
-    inProgress = fetchImage();
-  }
-
-  Future<Uint8List> fetchImage() => client.fetchImage(category, mode: mode);
-}
+String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
 class ImageClient {
   final _client = Client();
-  final _ready = Event();
+  final _rng = Random();
 
+  /// Mapping of SFW categories to providable image sources
   final sfw = <String, List<ImageSource>>{};
+
+  /// Mapping of NSFW categories to providable image sources
   final nsfw = <String, List<ImageSource>>{};
 
-  final history = <String, Uint8List>{};
+  /// Mapping of image URLs to image data
+  final history = <String, ImageData>{};
 
-  String? currentUrl;
+  /// Processor that manages the image fetching process
+  late final ImageFetchingProcessor processor;
+
+  /// The last fetched image;
+  ImageData? lastImage;
+
+  /// The current image category
+  String category = "waifu";
+
+  /// Is the current image mode SFW?
+  bool isSfw = true;
+
+  /// A [String] describes the current mode
+  String get describeMode => "${sfwStateExpression(isSfw)}/$category";
 
   Future<void> prepare() async {
-    await populateSources(_client);
-    for (var imageSource in imageSources) {
-      for (var category in imageSource.sfw) {
-        sfw.putIfAbsent(category, () => <ImageSource>[]);
-        sfw[category]!.add(imageSource);
+    var sources = constructSources(_client);
+    var prepareFutures = <Future<void>>[];
+    for (var source in sources) {
+      prepareFutures.add(source.populateCategories());
+    }
+
+    await Future.wait(prepareFutures);
+
+    for (var source in sources) {
+      for (var category in source.sfw) {
+        sfw.putIfAbsent(category, () => <ImageSource>[]).add(source);
       }
 
-      for (var category in imageSource.nsfw) {
-        nsfw.putIfAbsent(category, () => <ImageSource>[]);
-        nsfw[category]!.add(imageSource);
+      for (var category in source.nsfw) {
+        nsfw.putIfAbsent(category, () => <ImageSource>[]).add(source);
       }
     }
 
-    _ready.set();
+    processor = ImageFetchingProcessor(this);
   }
 
-  Future<void> waitUntilReady() async {
-    await _ready.wait();
-  }
-
-  Future<String> getImageUrl(String category, {required String mode}) async {
-    await waitUntilReady();
-    var sources = mode == "sfw" ? sfw[category] : nsfw[category];
-    var index = Random().nextInt(sources!.length);
+  Future<ImageData> fetchImage() async {
+    var sources = isSfw ? sfw[category] : nsfw[category];
+    var index = _rng.nextInt(sources!.length);
     var source = sources[index];
-    return source.getImageUrl(category, mode: mode, client: _client);
-  }
 
-  Future<Uint8List> fetchImage(String category, {required String mode}) async {
-    var url = currentUrl = await getImageUrl(category, mode: mode);
-    if (history[url] == null) {
-      var response = await _client.get(Uri.parse(url));
-      history[url] = response.bodyBytes;
-    }
-
-    return history[url]!;
+    var image = await source.fetchImage(category, isSfw: isSfw);
+    lastImage = history[image.url] = image;
+    return image;
   }
 
   /// Save the current image which has been completely fetched.
   ///
   /// Returns `true` on success and `false` otherwise.
   Future<bool> saveCurrentImage() async {
-    if (currentUrl != null) {
-      var result = await ImageGallerySaver.saveImage(history[currentUrl]!);
+    if (lastImage != null) {
+      var result = await ImageGallerySaver.saveImage(lastImage!.data);
       return result["isSuccess"];
     }
     return false;
+  }
+}
+
+class ImageFetchingProcessor {
+  final ImageClient client;
+
+  Completer<ImageData> inProgress = Completer<ImageData>();
+
+  ImageFetchingProcessor(this.client) {
+    inProgress.complete(client.fetchImage());
+  }
+
+  void resetProgress({bool forced = false, ImageData? customData}) {
+    if (!inProgress.isCompleted && !forced) {
+      return;
+    }
+
+    inProgress = Completer<ImageData>();
+    if (customData == null) {
+      var future = client.fetchImage();
+      future.then(
+        (data) {
+          inProgress.complete(data);
+          return data;
+        },
+      );
+    } else {
+      inProgress.complete(customData);
+    }
+  }
+
+  Widget transform(BuildContext context, AsyncSnapshot<ImageData> snapshot) {
+    if (snapshot.connectionState == ConnectionState.done) {
+      return Image.memory(snapshot.data!.data);
+    } else if (snapshot.connectionState == ConnectionState.waiting) {
+      return loadingIndicator(content: "Loading image");
+    } else {
+      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
+    }
   }
 }

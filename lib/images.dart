@@ -1,40 +1,27 @@
-import "dart:typed_data";
-
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:fluttertoast/fluttertoast.dart";
+import "package:permission_handler/permission_handler.dart";
 
 import "client.dart";
 import "utils.dart";
 
 class ImagesPage extends StatefulWidget {
   final ImageClient client;
-  final ImageCategory category;
 
-  const ImagesPage({Key? key, required this.client, required this.category}) : super(key: key);
+  const ImagesPage({Key? key, required this.client}) : super(key: key);
 
   @override
   State<ImagesPage> createState() => _ImagesPageState();
 }
 
 class _ImagesPageState extends State<ImagesPage> {
-  ImageClient get client => widget.client;
-  ImageCategory get category => widget.category;
-
-  bool _buttonsExpanded = false;
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
-  /// Process the future [snapshot] and turn it into a [Widget]
-  Widget processImageFuture(BuildContext ctx, AsyncSnapshot<Uint8List> snapshot) {
-    if (snapshot.connectionState == ConnectionState.done) {
-      return Image.memory(snapshot.data!);
-    } else if (snapshot.connectionState == ConnectionState.waiting) {
-      return loadingIndicator(content: "Loading image");
-    } else {
-      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
-    }
-  }
+  ImageClient get client => widget.client;
+  ImageFetchingProcessor get processor => widget.client.processor;
+
+  bool _buttonsExpanded = false;
 
   void openDrawer() => _scaffoldKey.currentState!.openDrawer();
   void closeDrawer() => _scaffoldKey.currentState!.closeDrawer();
@@ -47,20 +34,20 @@ class _ImagesPageState extends State<ImagesPage> {
     sfwCategories.sort();
     nsfwCategories.sort();
 
-    void Function() createSetStateFunction(String imageMode, String imageCategory) {
+    void Function() createSetStateFunction(String imageCategory, bool isSfw) {
       return () {
-        category.category = imageCategory;
-        category.mode = imageMode;
+        client.category = imageCategory;
+        client.isSfw = isSfw;
 
         closeDrawer();
-        category.resetFuture();
+        processor.resetProgress(forced: true);
       };
     }
 
     for (var category in sfwCategories) {
       var tile = ListTile(
         title: Text(category),
-        onTap: () => setState(createSetStateFunction("sfw", category)),
+        onTap: () => setState(createSetStateFunction(category, true)),
       );
       sfwTiles.add(tile);
     }
@@ -68,7 +55,7 @@ class _ImagesPageState extends State<ImagesPage> {
     for (var category in nsfwCategories) {
       var tile = ListTile(
         title: Text(category),
-        onTap: () => setState(createSetStateFunction("nsfw", category)),
+        onTap: () => setState(createSetStateFunction(category, false)),
       );
       nsfwTiles.add(tile);
     }
@@ -78,7 +65,7 @@ class _ImagesPageState extends State<ImagesPage> {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: Colors.blue),
-            child: Text("Current mode: ${category.describeMode}"),
+            child: Text("Current mode: ${client.describeMode}"),
           ),
           ExpansionTile(
             title: const Text("SFW"),
@@ -102,8 +89,7 @@ class _ImagesPageState extends State<ImagesPage> {
     List<Widget> buttons = [];
     if (_buttonsExpanded) {
       // Add the "info" button
-      if (client.currentUrl != null) {
-        var currentUrl = client.currentUrl!;
+      if (client.lastImage != null) {
         buttons.addAll(
           [
             FloatingActionButton(
@@ -112,7 +98,7 @@ class _ImagesPageState extends State<ImagesPage> {
                   context: context,
                   builder: (BuildContext ctx) => AlertDialog(
                     title: const Text("Image URL"),
-                    content: Text(currentUrl),
+                    content: Text(client.lastImage!.url),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
@@ -120,7 +106,7 @@ class _ImagesPageState extends State<ImagesPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: currentUrl));
+                          Clipboard.setData(ClipboardData(text: client.lastImage!.url));
                           Fluttertoast.showToast(msg: "Copied to clipboard");
                         },
                         child: const Text("Copy"),
@@ -149,6 +135,7 @@ class _ImagesPageState extends State<ImagesPage> {
           seperator,
           FloatingActionButton(
             onPressed: () async {
+              await requestPermission(Permission.storage);
               var result = await client.saveCurrentImage();
               await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
             },
@@ -158,7 +145,9 @@ class _ImagesPageState extends State<ImagesPage> {
           ),
           seperator,
           FloatingActionButton(
-            onPressed: () => setState(category.resetFuture),
+            onPressed: () => setState(() {
+              processor.resetProgress();
+            }),
             tooltip: "Find another image",
             heroTag: null,
             child: const Icon(Icons.refresh),
@@ -190,8 +179,8 @@ class _ImagesPageState extends State<ImagesPage> {
       drawer: createDrawer(),
       body: Center(
         child: FutureBuilder(
-          future: category.inProgress,
-          builder: processImageFuture,
+          future: processor.inProgress.future,
+          builder: processor.transform,
         ),
       ),
       floatingActionButton: Column(

@@ -1,12 +1,12 @@
 import "package:flutter/material.dart";
 
 import "client.dart";
+import "sources.dart";
 
 class RecentImagesPage extends StatefulWidget {
   final ImageClient client;
-  final ImageCategory category;
 
-  const RecentImagesPage({Key? key, required this.client, required this.category}) : super(key: key);
+  const RecentImagesPage({Key? key, required this.client}) : super(key: key);
 
   @override
   State<RecentImagesPage> createState() => _RecentImagesPageState();
@@ -14,23 +14,10 @@ class RecentImagesPage extends StatefulWidget {
 
 class _RecentImagesPageState extends State<RecentImagesPage> {
   ImageClient get client => widget.client;
-  ImageCategory get category => widget.category;
 
   @override
   Widget build(BuildContext context) {
-    var children = <Widget>[];
-
-    for (var imageData in client.history.values) {
-      children.add(
-        ListTile(
-          title: Image.memory(imageData),
-          onTap: () {
-            category.inProgress = Future.value(imageData);
-            Navigator.pushNamed(context, "/");
-          },
-        ),
-      );
-    }
+    var history = List<ImageData>.from(client.history.values);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,8 +25,14 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
         automaticallyImplyLeading: false,
       ),
       body: ListView.builder(
-        itemCount: children.length,
-        itemBuilder: (context, index) => children[index],
+        itemCount: history.length,
+        itemBuilder: (context, index) => ListTile(
+          title: Image.memory(history[index].data),
+          onTap: () {
+            client.processor.resetProgress(forced: true, customData: history[index]);
+            Navigator.pushNamed(context, "/");
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

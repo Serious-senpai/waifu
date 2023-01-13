@@ -1,5 +1,5 @@
 ## Waifu Generator
-Generate random waifu images for Android platform
+Generate random waifu images for Android devices
 ### Build from source
 - Figure out how to install Flutter yourself. Make sure your Flutter version satisfies the one in [pubspec.yaml](pubspec.yaml)
 - Navigate to the project directory

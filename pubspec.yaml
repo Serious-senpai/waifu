@@ -30,7 +30,6 @@ dependencies:
   flutter:
     sdk: flutter
   async_locks: 3.1.0
-  flutter_launcher_icons: 0.11.0
   fluttertoast: 8.0.8
   http: 0.13.4
   image_gallery_saver: 1.7.1
@@ -42,6 +41,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  flutter_launcher_icons: 0.11.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

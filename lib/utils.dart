@@ -54,7 +54,7 @@ Widget errorIndicator({String? content, double size = 60}) {
 }
 
 Future<void> launch(Uri url) async {
-  var status = await launchUrl(url);
+  var status = await launchUrl(url, mode: LaunchMode.externalApplication);
 
   if (!status) {
     await Fluttertoast.showToast(msg: "Cannot launch $url");

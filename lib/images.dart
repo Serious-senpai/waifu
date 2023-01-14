@@ -61,24 +61,37 @@ class _ImagesPageState extends State<ImagesPage> {
     }
 
     return Drawer(
-      child: ListView(
+      child: Stack(
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Colors.blue),
-            child: Text("Current mode: ${client.describeMode}"),
+          ListView(
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(color: Colors.blue),
+                child: Text("Current mode: ${client.describeMode}"),
+              ),
+              ExpansionTile(
+                title: const Text("SFW"),
+                children: sfwTiles,
+              ),
+              ExpansionTile(
+                title: const Text("NSFW"),
+                children: nsfwTiles,
+              ),
+              ListTile(
+                title: const Text("Recent images"),
+                onTap: () => Navigator.pushNamed(context, "/recent-images"),
+              )
+            ],
           ),
-          ExpansionTile(
-            title: const Text("SFW"),
-            children: sfwTiles,
+          Positioned(
+            bottom: 5.0,
+            left: 5.0,
+            child: IconButton(
+              iconSize: 15,
+              onPressed: () => launch(Uri.https("github.com", "Serious-senpai/waifu")),
+              icon: Image.asset("assets/github-mark-white.png"),
+            ),
           ),
-          ExpansionTile(
-            title: const Text("NSFW"),
-            children: nsfwTiles,
-          ),
-          ListTile(
-            title: const Text("Recent images"),
-            onTap: () => Navigator.pushNamed(context, "/recent-images"),
-          )
         ],
       ),
     );

@@ -2,6 +2,7 @@ import "dart:async";
 import "dart:math";
 
 import "package:flutter/material.dart";
+import "package:fluttertoast/fluttertoast.dart";
 import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
@@ -26,9 +27,6 @@ class ImageClient {
 
   /// Processor that manages the image fetching process
   late final ImageFetchingProcessor processor;
-
-  /// The last fetched image;
-  ImageData? lastImage;
 
   /// The current image category
   String category = "waifu";
@@ -67,19 +65,8 @@ class ImageClient {
     var source = sources[index];
 
     var image = await source.fetchImage(category, isSfw: isSfw);
-    lastImage = history[image.url] = image;
+    history[image.url] = image;
     return image;
-  }
-
-  /// Save the current image which has been completely fetched.
-  ///
-  /// Returns `true` on success and `false` otherwise.
-  Future<bool> saveCurrentImage() async {
-    if (lastImage != null) {
-      var result = await ImageGallerySaver.saveImage(lastImage!.data);
-      return result["isSuccess"];
-    }
-    return false;
   }
 }
 
@@ -87,6 +74,9 @@ class ImageFetchingProcessor {
   final ImageClient client;
 
   Completer<ImageData> inProgress = Completer<ImageData>();
+
+  /// The last fetched image;
+  ImageData? currentImage;
 
   ImageFetchingProcessor(this.client) {
     inProgress.complete(client.fetchImage());
@@ -97,6 +87,7 @@ class ImageFetchingProcessor {
       if (forced) {
         inProgress.completeError(RequestCancelledException);
       } else {
+        Fluttertoast.showToast(msg: "You are on a cooldown!");
         return;
       }
     }
@@ -107,12 +98,14 @@ class ImageFetchingProcessor {
       future.then(
         (data) {
           if (!inProgress.isCompleted) {
+            currentImage = data;
             inProgress.complete(data);
           }
           return data;
         },
       );
     } else {
+      currentImage = customData;
       inProgress.complete(customData);
     }
   }
@@ -125,5 +118,16 @@ class ImageFetchingProcessor {
     } else {
       return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
     }
+  }
+
+  /// Save the current image which has been completely fetched.
+  ///
+  /// Returns `true` on success and `false` otherwise.
+  Future<bool> saveCurrentImage() async {
+    if (currentImage != null) {
+      var result = await ImageGallerySaver.saveImage(currentImage!.data);
+      return result["isSuccess"];
+    }
+    return false;
   }
 }

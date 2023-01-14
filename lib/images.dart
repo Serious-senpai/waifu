@@ -88,8 +88,8 @@ class _ImagesPageState extends State<ImagesPage> {
   List<Widget> createButtonArray(BuildContext context) {
     List<Widget> buttons = [];
     if (_buttonsExpanded) {
-      // Add the "info" button
-      if (client.lastImage != null) {
+      // Mustn't store processor.currentImage in a variable
+      if (processor.currentImage != null) {
         buttons.addAll(
           [
             FloatingActionButton(
@@ -98,19 +98,24 @@ class _ImagesPageState extends State<ImagesPage> {
                   context: context,
                   builder: (BuildContext ctx) => AlertDialog(
                     title: const Text("Image URL"),
-                    content: Text(client.lastImage!.url),
+                    content: Text(processor.currentImage!.url),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
                         child: const Text("OK"),
                       ),
                       TextButton(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: client.lastImage!.url));
-                          Fluttertoast.showToast(msg: "Copied to clipboard");
+                        onPressed: () async {
+                          Clipboard.setData(ClipboardData(text: processor.currentImage!.url));
+                          await Fluttertoast.showToast(msg: "Copied to clipboard");
                         },
                         child: const Text("Copy"),
                       ),
+                      TextButton(
+                          onPressed: () async {
+                            await launch(Uri.parse(processor.currentImage!.url));
+                          },
+                          child: const Text("Open")),
                     ],
                   ),
                 );
@@ -118,6 +123,23 @@ class _ImagesPageState extends State<ImagesPage> {
               tooltip: "Show source",
               heroTag: null,
               child: const Icon(Icons.info),
+            ),
+            seperator,
+            FloatingActionButton(
+              onPressed: () async {
+                await launch(
+                  Uri.https(
+                    "saucenao.com",
+                    "/search.php",
+                    {
+                      "url": processor.currentImage!.url,
+                    },
+                  ),
+                );
+              },
+              tooltip: "Search on saucenao.com",
+              heroTag: null,
+              child: const Icon(Icons.search_outlined),
             ),
             seperator,
           ],
@@ -135,9 +157,18 @@ class _ImagesPageState extends State<ImagesPage> {
           seperator,
           FloatingActionButton(
             onPressed: () async {
-              await requestPermission(Permission.storage);
-              var result = await client.saveCurrentImage();
-              await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
+              var result = await processor.saveCurrentImage();
+              if (!result) {
+                var request = await Permission.storage.request();
+                if (request.isGranted) {
+                  result = await processor.saveCurrentImage();
+                  await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
+                } else {
+                  await Fluttertoast.showToast(msg: "Missing permission");
+                }
+              } else {
+                await Fluttertoast.showToast(msg: "Saved image!");
+              }
             },
             tooltip: "Save image",
             heroTag: null,

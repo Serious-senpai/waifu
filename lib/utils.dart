@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
-import "package:permission_handler/permission_handler.dart";
+import "package:fluttertoast/fluttertoast.dart";
+import "package:url_launcher/url_launcher.dart";
 
 /// A transparent [SizedBox] with a width and height of 10.0
 const seperator = SizedBox(width: 10.0, height: 10.0);
@@ -52,8 +53,10 @@ Widget errorIndicator({String? content, double size = 60}) {
   );
 }
 
-/// Request for a permission if not granted
-Future<bool> requestPermission(Permission permission) async {
-  var request = await permission.request();
-  return request.isGranted;
+Future<void> launch(Uri url) async {
+  var status = await launchUrl(url);
+
+  if (!status) {
+    await Fluttertoast.showToast(msg: "Cannot launch $url");
+  }
 }

@@ -1,7 +1,13 @@
-class RequestCancelledException implements Exception {
-  String message = "Request to fetch image has been cancelled";
+abstract class ApplicationException implements Exception {
+  abstract final String message;
+
+  @override
+  String toString() {
+    return message;
+  }
 }
 
-class NotImplementedError implements Exception {
-  String message = "This member needs to be implemented in the subclass";
+class RequestCancelledException implements ApplicationException {
+  @override
+  final String message = "Request to fetch image has been cancelled";
 }

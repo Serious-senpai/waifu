@@ -51,7 +51,7 @@ class _BaseImageSource extends ImageSource {
   final Set<String> nsfw = <String>{};
 
   @override
-  String get baseUrl => throw (NotImplementedError);
+  String get baseUrl => throw UnimplementedError;
 
   @override
   final ImageClient client;
@@ -59,10 +59,10 @@ class _BaseImageSource extends ImageSource {
   _BaseImageSource(this.client);
 
   @override
-  Future<void> populateCategories() => throw (NotImplementedError);
+  Future<void> populateCategories() => throw UnimplementedError;
 
   @override
-  Future<String> getImageUrl(String category, {required bool isSfw}) => throw (NotImplementedError);
+  Future<String> getImageUrl(String category, {required bool isSfw}) => throw UnimplementedError;
 
   @override
   Future<ImageData> fetchImage(String category, {required bool isSfw}) async {

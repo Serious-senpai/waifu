@@ -32,8 +32,11 @@ jobs:
         flutter --version
         flutter doctor -v
 
-    - name: Initialize Flutter project
+    - name: Initialize project
       run: flutter create --platforms android .
+
+    - name: Analyze project
+      run: flutter analyze
 
     - name: Test build
       run: flutter build apk

@@ -4,7 +4,6 @@ import "dart:typed_data";
 import "package:http/http.dart";
 
 import "client.dart";
-import "errors.dart";
 
 class ImageData {
   final String url;

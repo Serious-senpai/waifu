@@ -13,8 +13,8 @@ import "utils.dart";
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
 class ImageClient {
-  final _client = Client();
-  final _rng = Random();
+  /// [Client] to perform HTTP requests
+  final http = Client();
 
   /// Mapping of SFW categories to providable image sources
   final sfw = <String, List<ImageSource>>{};
@@ -37,8 +37,10 @@ class ImageClient {
   /// A [String] describes the current mode
   String get describeMode => "${sfwStateExpression(isSfw)}/$category";
 
+  final _rng = Random();
+
   Future<void> prepare() async {
-    var sources = constructSources(_client);
+    var sources = constructSources(this);
     var prepareFutures = <Future<void>>[];
     for (var source in sources) {
       prepareFutures.add(source.populateCategories());
@@ -79,7 +81,7 @@ class ImageFetchingProcessor {
   ImageData? currentImage;
 
   ImageFetchingProcessor(this.client) {
-    inProgress.complete(client.fetchImage());
+    resetProgress(forced: true);
   }
 
   void resetProgress({bool forced = false, ImageData? customData}) {

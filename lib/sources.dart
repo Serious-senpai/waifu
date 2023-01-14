@@ -4,6 +4,7 @@ import "dart:typed_data";
 import "package:http/http.dart";
 
 import "client.dart";
+import "errors.dart";
 
 class ImageData {
   final String url;
@@ -27,8 +28,10 @@ abstract class ImageSource {
   /// Base URL for the API
   abstract final String baseUrl;
 
-  /// The [Client] to perform HTTP requests
-  abstract final Client client;
+  /// The [ImageClient] that manages this source
+  abstract final ImageClient client;
+
+  Client get http => client.http;
 
   /// Get all categories that this image source can provide.
   Future<void> populateCategories();
@@ -36,11 +39,11 @@ abstract class ImageSource {
   /// Get the URL for an image
   Future<String> getImageUrl(String category, {required bool isSfw});
 
-  /// Get the URL for an image
+  /// Fetch an image with the given category and mode
   Future<ImageData> fetchImage(String category, {required bool isSfw});
 }
 
-class WaifuPics implements ImageSource {
+class _BaseImageSource extends ImageSource {
   @override
   final Set<String> sfw = <String>{};
 
@@ -48,16 +51,40 @@ class WaifuPics implements ImageSource {
   final Set<String> nsfw = <String>{};
 
   @override
-  final String baseUrl = "api.waifu.pics";
+  String get baseUrl => throw (NotImplementedError);
 
   @override
-  final Client client;
+  final ImageClient client;
 
-  WaifuPics(this.client);
+  _BaseImageSource(this.client);
+
+  @override
+  Future<void> populateCategories() => throw (NotImplementedError);
+
+  @override
+  Future<String> getImageUrl(String category, {required bool isSfw}) => throw (NotImplementedError);
+
+  @override
+  Future<ImageData> fetchImage(String category, {required bool isSfw}) async {
+    var url = await getImageUrl(category, isSfw: isSfw);
+    if (client.history[url] == null) {
+      var response = await http.get(Uri.parse(url));
+      return ImageData(url, category, isSfw, response.bodyBytes);
+    } else {
+      return client.history[url]!;
+    }
+  }
+}
+
+class WaifuPics extends _BaseImageSource {
+  @override
+  final String baseUrl = "api.waifu.pics";
+
+  WaifuPics(ImageClient client) : super(client);
 
   @override
   Future<void> populateCategories() async {
-    var response = await client.get(Uri.https(baseUrl, "/endpoints"));
+    var response = await http.get(Uri.https(baseUrl, "/endpoints"));
     var data = jsonDecode(response.body);
 
     sfw.addAll(List<String>.from(data["sfw"]));
@@ -67,38 +94,22 @@ class WaifuPics implements ImageSource {
   @override
   Future<String> getImageUrl(String category, {required bool isSfw}) async {
     var mode = sfwStateExpression(isSfw);
-    var response = await client.get(Uri.https(baseUrl, "/$mode/$category"));
+    var response = await http.get(Uri.https(baseUrl, "/$mode/$category"));
     var data = jsonDecode(response.body);
 
     return data["url"];
   }
-
-  @override
-  Future<ImageData> fetchImage(String category, {required bool isSfw}) async {
-    var url = await getImageUrl(category, isSfw: isSfw);
-    var response = await client.get(Uri.parse(url));
-    return ImageData(url, category, isSfw, response.bodyBytes);
-  }
 }
 
-class WaifuIm implements ImageSource {
-  @override
-  final Set<String> sfw = <String>{};
-
-  @override
-  final Set<String> nsfw = <String>{};
-
+class WaifuIm extends _BaseImageSource {
   @override
   final String baseUrl = "api.waifu.im";
 
-  @override
-  final Client client;
-
-  WaifuIm(this.client);
+  WaifuIm(ImageClient client) : super(client);
 
   @override
   Future<void> populateCategories() async {
-    var response = await client.get(
+    var response = await http.get(
       Uri.https(baseUrl, "/tags", {"full": "true"}),
       headers: {"Accept-Version": "v4"},
     );
@@ -116,7 +127,7 @@ class WaifuIm implements ImageSource {
 
   @override
   Future<String> getImageUrl(String category, {required bool isSfw}) async {
-    var response = await client.get(
+    var response = await http.get(
       Uri.https(
         baseUrl,
         "/search",
@@ -133,15 +144,8 @@ class WaifuIm implements ImageSource {
 
     return data["images"][0]["url"];
   }
-
-  @override
-  Future<ImageData> fetchImage(String category, {required bool isSfw}) async {
-    var url = await getImageUrl(category, isSfw: isSfw);
-    var response = await client.get(Uri.parse(url));
-    return ImageData(url, category, isSfw, response.bodyBytes);
-  }
 }
 
-List<ImageSource> constructSources(Client client) {
+List<ImageSource> constructSources(ImageClient client) {
   return <ImageSource>[WaifuPics(client), WaifuIm(client)];
 }

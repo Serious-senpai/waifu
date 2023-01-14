@@ -88,8 +88,8 @@ class _ImagesPageState extends State<ImagesPage> {
   List<Widget> createButtonArray(BuildContext context) {
     List<Widget> buttons = [];
     if (_buttonsExpanded) {
-      // Mustn't store processor.currentImage in a variable
       if (processor.currentImage != null) {
+        // Mustn't store processor.currentImage in a variable
         buttons.addAll(
           [
             FloatingActionButton(
@@ -158,7 +158,9 @@ class _ImagesPageState extends State<ImagesPage> {
           FloatingActionButton(
             onPressed: () async {
               var result = await processor.saveCurrentImage();
-              if (!result) {
+              if (result) {
+                await Fluttertoast.showToast(msg: "Saved image!");
+              } else {
                 var request = await Permission.storage.request();
                 if (request.isGranted) {
                   result = await processor.saveCurrentImage();
@@ -166,8 +168,6 @@ class _ImagesPageState extends State<ImagesPage> {
                 } else {
                   await Fluttertoast.showToast(msg: "Missing permission");
                 }
-              } else {
-                await Fluttertoast.showToast(msg: "Saved image!");
               }
             },
             tooltip: "Save image",

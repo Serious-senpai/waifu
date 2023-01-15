@@ -9,5 +9,5 @@ abstract class ApplicationException implements Exception {
 
 class RequestCancelledException implements ApplicationException {
   @override
-  final String message = "Request to fetch image has been cancelled";
+  final message = "Request to fetch image has been cancelled";
 }

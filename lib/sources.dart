@@ -44,10 +44,10 @@ abstract class ImageSource {
 
 class _BaseImageSource extends ImageSource {
   @override
-  final Set<String> sfw = <String>{};
+  final sfw = <String>{};
 
   @override
-  final Set<String> nsfw = <String>{};
+  final nsfw = <String>{};
 
   @override
   String get baseUrl => throw UnimplementedError;
@@ -75,11 +75,11 @@ class _BaseImageSource extends ImageSource {
   }
 }
 
-class WaifuPics extends _BaseImageSource {
+class WaifuPICS extends _BaseImageSource {
   @override
-  final String baseUrl = "api.waifu.pics";
+  final baseUrl = "api.waifu.pics";
 
-  WaifuPics(ImageClient client) : super(client);
+  WaifuPICS(ImageClient client) : super(client);
 
   @override
   Future<void> populateCategories() async {
@@ -100,11 +100,11 @@ class WaifuPics extends _BaseImageSource {
   }
 }
 
-class WaifuIm extends _BaseImageSource {
+class WaifuIM extends _BaseImageSource {
   @override
-  final String baseUrl = "api.waifu.im";
+  final baseUrl = "api.waifu.im";
 
-  WaifuIm(ImageClient client) : super(client);
+  WaifuIM(ImageClient client) : super(client);
 
   @override
   Future<void> populateCategories() async {
@@ -145,6 +145,41 @@ class WaifuIm extends _BaseImageSource {
   }
 }
 
+class AsunaGA extends _BaseImageSource {
+  @override
+  final baseUrl = "asuna.ga";
+
+  final _urlMap = <String, String>{};
+
+  AsunaGA(ImageClient client) : super(client);
+
+  @override
+  Future<void> populateCategories() async {
+    final converter = <String, String>{"wholesome_foxes": "foxes"};
+
+    var response = await http.get(Uri.https("asuna.ga", "/api"));
+    var data = json.decode(response.body);
+    for (var tag in data["allEndpoints"]) {
+      var url = data["endpointInfo"][tag]["url"];
+      tag = converter[tag] ?? tag;
+      _urlMap[tag] = url;
+
+      sfw.add(tag);
+    }
+  }
+
+  @override
+  Future<String> getImageUrl(String category, {required bool isSfw}) async {
+    var response = await http.get(Uri.parse(_urlMap[category]!));
+    var data = json.decode(response.body);
+    return data["url"];
+  }
+}
+
 List<ImageSource> constructSources(ImageClient client) {
-  return <ImageSource>[WaifuPics(client), WaifuIm(client)];
+  return <ImageSource>[
+    WaifuPICS(client),
+    WaifuIM(client),
+    AsunaGA(client),
+  ];
 }

@@ -43,6 +43,7 @@ class _ImagesPageState extends State<ImagesPage> {
 
         closeDrawer();
         singleProcessor.resetProgress(forced: true);
+        multiProcessor.clear();
       };
     }
 

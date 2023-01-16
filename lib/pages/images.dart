@@ -43,7 +43,7 @@ class _ImagesPageState extends State<ImagesPage> {
 
         closeDrawer();
         singleProcessor.resetProgress(forced: true);
-        multiProcessor.clear();
+        multiProcessor.clearProcess();
       };
     }
 
@@ -255,7 +255,38 @@ class _ImagesPageState extends State<ImagesPage> {
             setState(() => _displayMultipleImages = false);
           }
         },
-        child: FutureBuilder(future: process.future, builder: renderSmall),
+        child: FutureBuilder(
+          future: process.future,
+          builder: (context, snapshot) {
+            var edge = MediaQuery.of(context).size.width / 2;
+            if (snapshot.connectionState == ConnectionState.done) {
+              return Image.memory(
+                snapshot.data!.data,
+                width: edge,
+                height: edge,
+                fit: BoxFit.cover,
+              );
+            } else if (snapshot.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                width: edge,
+                height: edge,
+                child: loadingIndicator(
+                  content: "Loading image",
+                  size: edge / 4,
+                ),
+              );
+            } else {
+              return SizedBox(
+                width: edge,
+                height: edge,
+                child: errorIndicator(
+                  content: "Invalid state: ${snapshot.connectionState}",
+                  size: edge / 4,
+                ),
+              );
+            }
+          },
+        ),
       );
     }
 
@@ -277,7 +308,15 @@ class _ImagesPageState extends State<ImagesPage> {
           : Center(
               child: FutureBuilder(
                 future: singleProcessor.inProgress.future,
-                builder: renderOriginal,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return Image.memory(snapshot.data!.data);
+                  } else if (snapshot.connectionState == ConnectionState.waiting) {
+                    return loadingIndicator(content: "Loading image");
+                  } else {
+                    return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
+                  }
+                },
               ),
             ),
       floatingActionButton: Column(

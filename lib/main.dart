@@ -4,9 +4,9 @@ import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:fluttertoast/fluttertoast.dart";
 
-import "client.dart";
-import "images.dart";
-import "recent_images.dart";
+import "core/client.dart";
+import "pages/images.dart";
+import "pages/recent_images.dart";
 
 Future<void> main() async {
   try {

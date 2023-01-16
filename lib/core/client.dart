@@ -1,14 +1,13 @@
 import "dart:async";
 import "dart:math";
 
-import "package:flutter/material.dart";
+import "package:async_locks/async_locks.dart";
 import "package:fluttertoast/fluttertoast.dart";
 import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "errors.dart";
 import "sources.dart";
-import "utils.dart";
 
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
@@ -25,8 +24,11 @@ class ImageClient {
   /// Mapping of image URLs to image data
   final history = <String, ImageData>{};
 
-  /// Processor that manages the image fetching process
-  late final ImageFetchingProcessor processor;
+  /// Single processor that manages the image fetching process
+  late final SingleImageProcessor singleProcessor;
+
+  /// Multi-processor that manages the image fetching process
+  late final MultipleImagesProcessor multiProcessor;
 
   /// The current image category
   String category = "waifu";
@@ -38,6 +40,7 @@ class ImageClient {
   String get describeMode => "${sfwStateExpression(isSfw)}/$category";
 
   final _rng = Random();
+  final _semaphore = Semaphore(5);
 
   Future<void> prepare() async {
     var sources = constructSources(this);
@@ -58,7 +61,8 @@ class ImageClient {
       }
     }
 
-    processor = ImageFetchingProcessor(this);
+    singleProcessor = SingleImageProcessor(this);
+    multiProcessor = MultipleImagesProcessor(this);
   }
 
   Future<ImageData> fetchImage() async {
@@ -66,13 +70,17 @@ class ImageClient {
     var index = _rng.nextInt(sources!.length);
     var source = sources[index];
 
-    var image = await source.fetchImage(category, isSfw: isSfw);
-    history[image.url] = image;
-    return image;
+    return await _semaphore.run(
+      () async {
+        var image = await source.fetchImage(category, isSfw: isSfw);
+        history[image.url] = image;
+        return image;
+      },
+    );
   }
 }
 
-class ImageFetchingProcessor {
+class SingleImageProcessor {
   final ImageClient client;
 
   Completer<ImageData> inProgress = Completer<ImageData>();
@@ -80,7 +88,7 @@ class ImageFetchingProcessor {
   /// The last fetched image;
   ImageData? currentImage;
 
-  ImageFetchingProcessor(this.client) {
+  SingleImageProcessor(this.client) {
     resetProgress(forced: true);
   }
 
@@ -112,16 +120,6 @@ class ImageFetchingProcessor {
     }
   }
 
-  Widget transform(BuildContext context, AsyncSnapshot<ImageData> snapshot) {
-    if (snapshot.connectionState == ConnectionState.done) {
-      return Image.memory(snapshot.data!.data);
-    } else if (snapshot.connectionState == ConnectionState.waiting) {
-      return loadingIndicator(content: "Loading image");
-    } else {
-      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
-    }
-  }
-
   /// Save the current image which has been completely fetched.
   ///
   /// Returns `true` on success and `false` otherwise.
@@ -131,5 +129,34 @@ class ImageFetchingProcessor {
       return result["isSuccess"];
     }
     return false;
+  }
+}
+
+class MultipleImagesProcessor {
+  final ImageClient client;
+
+  final inProgress = <Completer<ImageData>>[];
+
+  MultipleImagesProcessor(this.client);
+
+  void clearProcess() => inProgress.clear();
+
+  void addProcess({ImageData? customData}) {
+    var process = Completer<ImageData>();
+    inProgress.add(process);
+
+    if (customData == null) {
+      var future = client.fetchImage();
+      future.then(
+        (data) {
+          if (!process.isCompleted) {
+            process.complete(data);
+          }
+          return data;
+        },
+      );
+    } else {
+      process.complete(customData);
+    }
   }
 }

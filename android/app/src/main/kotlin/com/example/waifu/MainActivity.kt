@@ -1,4 +1,4 @@
-package com.example.waifu
+package com.haruka.waifu
 
 import io.flutter.embedding.android.FlutterActivity
 

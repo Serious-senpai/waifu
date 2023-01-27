@@ -6,3 +6,6 @@ Generate random waifu images for Android devices
 - Navigate to the project directory
 - Initialize the project with `flutter create --platforms android --project-name waifu .`
 - Build the project for testing with `flutter run`, or for release with `flutter build apk`. You can also find the APK for the latest version [here](https://github.com/Serious-senpai/waifu/releases/latest)
+
+### Screenshots
+![Screenshots](assets/screenshots/screenshots.png)

@@ -16,7 +16,7 @@ GestureDetector createRedirectImage(BuildContext context, ImageClient client, Im
   return GestureDetector(
     onTap: () {
       client.singleProcessor.resetProgress(forced: true, customData: image);
-      Navigator.pushNamed(context, "/");
+      Navigator.pushReplacementNamed(context, "/");
     },
     child: Image.memory(image.data, width: edge, height: edge, fit: BoxFit.cover),
   );
@@ -30,7 +30,7 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
     var history = List<ImageData>.from(client.history.values);
     var edge = MediaQuery.of(context).size.width / 2;
 
-    return Scaffold(
+    var scaffold = Scaffold(
       appBar: AppBar(
         title: const Text("Recent images"),
         automaticallyImplyLeading: false,
@@ -48,12 +48,17 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, "/");
+          Navigator.pushReplacementNamed(context, "/");
         },
         tooltip: "Back",
         heroTag: null,
         child: const Icon(Icons.home),
       ),
+    );
+
+    return WillPopScope(
+      child: scaffold,
+      onWillPop: () => Future.value(false),
     );
   }
 }

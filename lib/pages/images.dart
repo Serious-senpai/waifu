@@ -100,7 +100,7 @@ class _ImagesPageState extends State<ImagesPage> {
               ),
               ListTile(
                 title: const Text("Recent images"),
-                onTap: () => Navigator.pushNamed(context, "/recent-images"),
+                onTap: () => Navigator.pushReplacementNamed(context, "/recent-images"),
               )
             ],
           ),

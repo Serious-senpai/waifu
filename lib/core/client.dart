@@ -6,6 +6,7 @@ import "package:fluttertoast/fluttertoast.dart";
 import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
+import "cache.dart";
 import "errors.dart";
 import "sources.dart";
 
@@ -22,7 +23,7 @@ class ImageClient {
   final nsfw = <String, List<ImageSource>>{};
 
   /// Mapping of image URLs to image data
-  final history = <String, ImageData>{};
+  final history = ImageCache();
 
   /// Single processor that manages the image fetching process
   late final SingleImageProcessor singleProcessor;
@@ -72,11 +73,21 @@ class ImageClient {
 
     return await _semaphore.run(
       () async {
-        var image = await source.fetchImage(category, isSfw: isSfw);
-        history[image.url] = image;
-        return image;
+        var url = await source.getImageUrl(category, isSfw: isSfw);
+        history.add(url, await fetchFromURL(url));
+
+        return history[url]!;
       },
     );
+  }
+
+  Future<ImageData> fetchFromURL(String url) async {
+    if (history[url] != null) {
+      return history[url]!;
+    }
+
+    var response = await http.get(Uri.parse(url));
+    return ImageData(url, category, isSfw, response.bodyBytes);
   }
 }
 

@@ -37,9 +37,6 @@ abstract class ImageSource {
 
   /// Get the URL for an image
   Future<String> getImageUrl(String category, {required bool isSfw});
-
-  /// Fetch an image with the given category and mode
-  Future<ImageData> fetchImage(String category, {required bool isSfw});
 }
 
 class _BaseImageSource extends ImageSource {
@@ -62,17 +59,6 @@ class _BaseImageSource extends ImageSource {
 
   @override
   Future<String> getImageUrl(String category, {required bool isSfw}) => throw UnimplementedError;
-
-  @override
-  Future<ImageData> fetchImage(String category, {required bool isSfw}) async {
-    var url = await getImageUrl(category, isSfw: isSfw);
-    if (client.history[url] == null) {
-      var response = await http.get(Uri.parse(url));
-      return ImageData(url, category, isSfw, response.bodyBytes);
-    } else {
-      return client.history[url]!;
-    }
-  }
 }
 
 class WaifuPICS extends _BaseImageSource {

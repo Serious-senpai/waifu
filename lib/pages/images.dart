@@ -96,6 +96,42 @@ class _ImagesPageState extends State<ImagesPage> {
                       );
                     },
                   ),
+                  ListTile(
+                    title: const Text("Edit images cache size"),
+                    onTap: () async {
+                      var controller = TextEditingController(text: client.history.maxSize.toString());
+                      var value = await showDialog<int>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Maximum cached images"),
+                          content: TextField(
+                            controller: controller,
+                            decoration: const InputDecoration.collapsed(hintText: "Cache size"),
+                            keyboardType: TextInputType.number,
+                            showCursor: true,
+                            enableSuggestions: false,
+                            maxLength: 2,
+                            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              onPressed: () {
+                                if (controller.text.isNotEmpty) {
+                                  Navigator.pop(context, int.parse(controller.text));
+                                }
+                              },
+                              child: const Text("OK"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (value != null) {
+                        client.history.maxSize = value;
+                        await Fluttertoast.showToast(msg: "Changed cache size to $value");
+                      }
+                    },
+                  )
                 ],
               ),
               ListTile(

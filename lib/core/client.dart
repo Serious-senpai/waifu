@@ -12,9 +12,17 @@ import "sources.dart";
 
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
+class HTTPClient {
+  final _http = Client();
+
+  final _semaphore = Semaphore(5);
+
+  Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));
+}
+
 class ImageClient {
-  /// [Client] to perform HTTP requests
-  final http = Client();
+  /// [HTTPClient] to perform HTTP requests
+  final http = HTTPClient();
 
   /// Mapping of SFW categories to providable image sources
   final sfw = <String, List<ImageSource>>{};
@@ -41,7 +49,6 @@ class ImageClient {
   String get describeMode => "${sfwStateExpression(isSfw)}/$category";
 
   final _rng = Random();
-  final _semaphore = Semaphore(5);
 
   Future<void> prepare() async {
     var sources = constructSources(this);
@@ -71,14 +78,10 @@ class ImageClient {
     var index = _rng.nextInt(sources!.length);
     var source = sources[index];
 
-    return await _semaphore.run(
-      () async {
-        var url = await source.getImageUrl(category, isSfw: isSfw);
-        history.add(url, await fetchFromURL(url));
+    var url = await source.getImageUrl(category, isSfw: isSfw);
+    history.add(url, await fetchFromURL(url));
 
-        return history[url]!;
-      },
-    );
+    return history[url]!;
   }
 
   Future<ImageData> fetchFromURL(String url) async {

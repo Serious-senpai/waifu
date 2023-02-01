@@ -30,7 +30,7 @@ abstract class ImageSource {
   /// The [ImageClient] that manages this source
   abstract final ImageClient client;
 
-  Client get http => client.http;
+  HTTPClient get http => client.http;
 
   /// Get all categories that this image source can provide.
   Future<void> populateCategories();

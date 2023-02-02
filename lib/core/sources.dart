@@ -1,7 +1,7 @@
 import "dart:convert";
 import "dart:typed_data";
 
-import "package:http/http.dart";
+import "package:flutter_image_compress/flutter_image_compress.dart";
 
 import "client.dart";
 
@@ -9,9 +9,19 @@ class ImageData {
   final String url;
   final String category;
   final bool isSfw;
-  final Uint8List data;
+  Uint8List _data;
+  bool _compressed = false;
 
-  ImageData(this.url, this.category, this.isSfw, this.data);
+  Uint8List get data => _data;
+
+  ImageData(this.url, this.category, this.isSfw, this._data);
+
+  Future<void> compress({bool force = false}) async {
+    if (_compressed && !force) return;
+
+    _data = await FlutterImageCompress.compressWithList(_data, quality: 80, format: CompressFormat.webp);
+    _compressed = true;
+  }
 
   @override
   String toString() => "<ImageData url = $url>";

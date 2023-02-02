@@ -276,6 +276,7 @@ class _ImagesPageState extends State<ImagesPage> {
     return buttons;
   }
 
+  /// Build [Scaffold]'s body when fetching multiple images
   Widget buildMultipleImages() {
     Widget buildImage(int index) {
       while (index >= multiProcessor.inProgress.length) {

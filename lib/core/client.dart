@@ -79,7 +79,7 @@ class ImageClient {
     var source = sources[index];
 
     var url = await source.getImageUrl(category, isSfw: isSfw);
-    history.add(url, await fetchFromURL(url));
+    await history.add(url, await fetchFromURL(url));
 
     return history[url]!;
   }

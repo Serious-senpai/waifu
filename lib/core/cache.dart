@@ -34,7 +34,8 @@ class ImageCache {
 
   AsyncImageViewer view(Future<ImageData> Function(String) fetcher) => AsyncImageViewer(List<String>.from(_urls), fetcher);
 
-  void add(String url, ImageData data) {
+  Future<void> add(String url, ImageData data) async {
+    await data.compress();
     _cache[url] = data;
     _urls.add(url);
   }

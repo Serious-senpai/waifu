@@ -7,7 +7,6 @@ import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "cache.dart";
-import "errors.dart";
 import "sources.dart";
 
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";

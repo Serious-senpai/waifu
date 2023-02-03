@@ -33,26 +33,32 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
       builder: (context, snapshot) {
         var edge = MediaQuery.of(context).size.width / 2;
         if (snapshot.connectionState == ConnectionState.done) {
-          return createRedirectImage(context, client, snapshot.data!, edge);
-        } else if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox(
-            width: edge,
-            height: edge,
-            child: loadingIndicator(
-              content: "Loading image",
-              size: edge / 4,
-            ),
-          );
-        } else {
-          return SizedBox(
-            width: edge,
-            height: edge,
-            child: errorIndicator(
-              content: "Invalid state: ${snapshot.connectionState}",
-              size: edge / 4,
-            ),
-          );
+          var data = snapshot.data;
+          if (data != null) {
+            return createRedirectImage(context, client, data, edge);
+          }
+
+          var error = snapshot.error;
+          if (error != null) {
+            return SizedBox(
+              width: edge,
+              height: edge,
+              child: errorIndicator(
+                content: "Error: $error",
+                size: edge / 4,
+              ),
+            );
+          }
         }
+
+        return SizedBox(
+          width: edge,
+          height: edge,
+          child: loadingIndicator(
+            content: "Loading image",
+            size: edge / 4,
+          ),
+        );
       },
     );
   }

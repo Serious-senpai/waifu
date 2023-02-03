@@ -1,7 +1,9 @@
+import "dart:collection";
 import "dart:convert";
 import "dart:typed_data";
 
 import "package:flutter_image_compress/flutter_image_compress.dart";
+import "package:meta/meta.dart";
 
 import "client.dart";
 
@@ -26,12 +28,6 @@ class ImageData {
   @override
   String toString() => "<ImageData url = $url>";
 }
-
-class NullImageData extends ImageData {
-  NullImageData() : super("", "", true, Uint8List.fromList([]));
-}
-
-var nullImageData = NullImageData();
 
 abstract class ImageSource {
   /// The SFW categories that this source can handle
@@ -77,7 +73,26 @@ class _BaseImageSource extends ImageSource {
   Future<String> getImageUrl(String category, {required bool isSfw}) => throw UnimplementedError;
 }
 
-class WaifuPICS extends _BaseImageSource {
+mixin _SupportFetchingMultipleImages on _BaseImageSource {
+  final _sfwResults = <String, ListQueue<String>>{};
+  final _nsfwResults = <String, ListQueue<String>>{};
+
+  Future<List<String>> _getImagesUrl(String category, {required bool isSfw}) => throw UnimplementedError;
+
+  @override
+  @nonVirtual
+  Future<String> getImageUrl(String category, {required bool isSfw}) async {
+    var fetchedResults = isSfw ? _sfwResults : _nsfwResults;
+    if (fetchedResults[category] == null || fetchedResults[category]!.isEmpty) {
+      fetchedResults[category] = ListQueue<String>();
+      fetchedResults[category]!.addAll(await _getImagesUrl(category, isSfw: isSfw));
+    }
+
+    return fetchedResults[category]!.removeFirst();
+  }
+}
+
+class WaifuPICS extends _BaseImageSource with _SupportFetchingMultipleImages {
   @override
   final baseUrl = "api.waifu.pics";
 
@@ -93,16 +108,20 @@ class WaifuPICS extends _BaseImageSource {
   }
 
   @override
-  Future<String> getImageUrl(String category, {required bool isSfw}) async {
+  Future<List<String>> _getImagesUrl(String category, {required bool isSfw}) async {
     var mode = sfwStateExpression(isSfw);
-    var response = await http.get(Uri.https(baseUrl, "/$mode/$category"));
+    var response = await http.post(
+      Uri.https(baseUrl, "/many/$mode/$category"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({}),
+    );
     var data = jsonDecode(response.body);
 
-    return data["url"];
+    return List<String>.from(data["files"]);
   }
 }
 
-class WaifuIM extends _BaseImageSource {
+class WaifuIM extends _BaseImageSource with _SupportFetchingMultipleImages {
   @override
   final baseUrl = "api.waifu.im";
 
@@ -127,7 +146,7 @@ class WaifuIM extends _BaseImageSource {
   }
 
   @override
-  Future<String> getImageUrl(String category, {required bool isSfw}) async {
+  Future<List<String>> _getImagesUrl(String category, {required bool isSfw}) async {
     var response = await http.get(
       Uri.https(
         baseUrl,
@@ -135,6 +154,7 @@ class WaifuIM extends _BaseImageSource {
         {
           "included_tags": category,
           "is_nsfw": isSfw ? "false" : "true",
+          "many": "true",
         },
       ),
       headers: {
@@ -143,7 +163,12 @@ class WaifuIM extends _BaseImageSource {
     );
     var data = jsonDecode(response.body);
 
-    return data["images"][0]["url"];
+    var results = <String>[];
+    for (var result in data["images"]) {
+      results.add(result["url"]);
+    }
+
+    return results;
   }
 }
 
@@ -151,7 +176,7 @@ class AsunaGA extends _BaseImageSource {
   @override
   final baseUrl = "asuna.ga";
 
-  final _urlMap = <String, String>{};
+  final _urlMap = <String, Uri>{};
 
   AsunaGA(ImageClient client) : super(client);
 
@@ -164,7 +189,7 @@ class AsunaGA extends _BaseImageSource {
     for (var tag in data["allEndpoints"]) {
       var url = data["endpointInfo"][tag]["url"];
       tag = converter[tag] ?? tag;
-      _urlMap[tag] = url;
+      _urlMap[tag] = Uri.parse(url);
 
       sfw.add(tag);
     }
@@ -172,7 +197,7 @@ class AsunaGA extends _BaseImageSource {
 
   @override
   Future<String> getImageUrl(String category, {required bool isSfw}) async {
-    var response = await http.get(Uri.parse(_urlMap[category]!));
+    var response = await http.get(_urlMap[category]!);
     var data = json.decode(response.body);
     return data["url"];
   }

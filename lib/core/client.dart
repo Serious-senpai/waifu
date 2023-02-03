@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:convert";
 import "dart:math";
 
 import "package:async_locks/async_locks.dart";
@@ -7,8 +8,10 @@ import "package:http/http.dart";
 import "package:image_gallery_saver/image_gallery_saver.dart";
 
 import "cache.dart";
+import "errors.dart";
 import "sources.dart";
 
+/// If [isSfw] is ``true``, return "sfw", otherwise return "nsfw"
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
 class HTTPClient {
@@ -17,6 +20,13 @@ class HTTPClient {
   final _semaphore = Semaphore(5);
 
   Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));
+  Future<Response> post(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+    Encoding? encoding,
+  }) =>
+      _semaphore.run(() => _http.post(url, headers: headers, body: body, encoding: encoding));
 
   void cancelAll() => _semaphore.cancelAll();
 }
@@ -75,12 +85,14 @@ class ImageClient {
   }
 
   Future<ImageData> fetchImage() async {
+    var category = this.category;
+    var isSfw = this.isSfw;
     var sources = isSfw ? sfw[category] : nsfw[category];
     var index = _rng.nextInt(sources!.length);
     var source = sources[index];
 
     var url = await source.getImageUrl(category, isSfw: isSfw);
-    await history.add(url, await fetchFromURL(url));
+    history.add(url, await fetchFromURL(url));
 
     return history[url]!;
   }
@@ -91,7 +103,17 @@ class ImageClient {
     }
 
     var response = await http.get(Uri.parse(url));
-    return ImageData(url, category, isSfw, response.bodyBytes);
+    var result = ImageData(url, category, isSfw, response.bodyBytes);
+    await result.compress();
+    return result;
+  }
+
+  /// Save the current image which has been completely fetched.
+  ///
+  /// Returns `true` on success and `false` otherwise.
+  static Future<bool> saveImage(ImageData image) async {
+    var result = await ImageGallerySaver.saveImage(image.data);
+    return result["isSuccess"];
   }
 }
 
@@ -100,9 +122,6 @@ class SingleImageProcessor {
 
   Completer<ImageData> inProgress = Completer<ImageData>();
 
-  /// The last fetched image;
-  ImageData? currentImage;
-
   SingleImageProcessor(this.client) {
     resetProgress(forced: true);
   }
@@ -110,7 +129,7 @@ class SingleImageProcessor {
   void resetProgress({bool forced = false, ImageData? customData}) {
     if (!inProgress.isCompleted) {
       if (forced) {
-        inProgress.complete(nullImageData);
+        inProgress.completeError(RequestCancelledException);
       } else {
         Fluttertoast.showToast(msg: "You are on a cooldown!");
         return;
@@ -123,33 +142,18 @@ class SingleImageProcessor {
       future.then(
         (data) {
           if (!inProgress.isCompleted) {
-            currentImage = data;
             inProgress.complete(data);
           }
           return data;
         },
-        onError: (_) {
-          if (!inProgress.isCompleted) {
-            inProgress.complete(nullImageData);
-          }
-          return nullImageData;
+        onError: (error) {
+          inProgress.completeError(error);
+          throw error;
         },
       );
     } else {
-      currentImage = customData;
       inProgress.complete(customData);
     }
-  }
-
-  /// Save the current image which has been completely fetched.
-  ///
-  /// Returns `true` on success and `false` otherwise.
-  Future<bool> saveCurrentImage() async {
-    if (currentImage != null) {
-      var result = await ImageGallerySaver.saveImage(currentImage!.data);
-      return result["isSuccess"];
-    }
-    return false;
   }
 }
 
@@ -178,11 +182,9 @@ class MultipleImagesProcessor {
           }
           return data;
         },
-        onError: (_) {
-          if (!process.isCompleted) {
-            process.complete(nullImageData);
-          }
-          return nullImageData;
+        onError: (error) {
+          process.completeError(error);
+          throw error;
         },
       );
     } else {

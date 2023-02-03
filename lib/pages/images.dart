@@ -155,98 +155,86 @@ class _ImagesPageState extends State<ImagesPage> {
     );
   }
 
-  /// Create an array of [FloatingActionButton]
-  List<Widget> createButtonArray(BuildContext context) {
+  /// Create an array of [FloatingActionButton] for single image mode
+  List<Widget> createSingleImageButtonArray(BuildContext context, AsyncSnapshot<ImageData> snapshot) {
     List<Widget> buttons = [];
     if (_buttonsExpanded) {
-      if (!_displayMultipleImages) {
-        // Displaying single image
-        if (singleProcessor.currentImage != null) {
-          // Mustn't store singleProcessor.currentImage in a variable
-          buttons.addAll(
-            [
-              FloatingActionButton(
-                onPressed: () async {
-                  await showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text("Image URL"),
-                      content: Text(singleProcessor.currentImage!.url),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text("OK"),
-                        ),
-                        TextButton(
+      var data = snapshot.data;
+      if (snapshot.connectionState == ConnectionState.done && data != null) {
+        buttons.addAll(
+          [
+            FloatingActionButton(
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Image URL"),
+                    content: Text(data.url),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text("OK"),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Clipboard.setData(ClipboardData(text: data.url));
+                          await Fluttertoast.showToast(msg: "Copied to clipboard");
+                        },
+                        child: const Text("Copy"),
+                      ),
+                      TextButton(
                           onPressed: () async {
-                            Clipboard.setData(ClipboardData(text: singleProcessor.currentImage!.url));
-                            await Fluttertoast.showToast(msg: "Copied to clipboard");
+                            await launch(Uri.parse(data.url));
                           },
-                          child: const Text("Copy"),
-                        ),
-                        TextButton(
-                            onPressed: () async {
-                              await launch(Uri.parse(singleProcessor.currentImage!.url));
-                            },
-                            child: const Text("Open")),
-                      ],
-                    ),
-                  );
-                },
-                tooltip: "Show source",
-                heroTag: null,
-                child: const Icon(Icons.info),
-              ),
-              seperator,
-              FloatingActionButton(
-                onPressed: () async {
-                  await launch(
-                    Uri.https(
-                      "saucenao.com",
-                      "/search.php",
-                      {
-                        "url": singleProcessor.currentImage!.url,
-                      },
-                    ),
-                  );
-                },
-                tooltip: "Search on saucenao.com",
-                heroTag: null,
-                child: const Icon(Icons.search_outlined),
-              ),
-              seperator,
-              FloatingActionButton(
-                onPressed: () async {
-                  var result = await singleProcessor.saveCurrentImage();
-                  if (result) {
-                    await Fluttertoast.showToast(msg: "Saved image!");
+                          child: const Text("Open")),
+                    ],
+                  ),
+                );
+              },
+              tooltip: "Show source",
+              heroTag: null,
+              child: const Icon(Icons.info),
+            ),
+            seperator,
+            FloatingActionButton(
+              onPressed: () async {
+                await launch(
+                  Uri.https(
+                    "saucenao.com",
+                    "/search.php",
+                    {
+                      "url": data.url,
+                    },
+                  ),
+                );
+              },
+              tooltip: "Search on saucenao.com",
+              heroTag: null,
+              child: const Icon(Icons.search_outlined),
+            ),
+            seperator,
+            FloatingActionButton(
+              onPressed: () async {
+                var result = await ImageClient.saveImage(data);
+                if (result) {
+                  await Fluttertoast.showToast(msg: "Saved image!");
+                } else {
+                  var request = await Permission.storage.request();
+                  if (request.isGranted) {
+                    result = await ImageClient.saveImage(data);
+                    await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
                   } else {
-                    var request = await Permission.storage.request();
-                    if (request.isGranted) {
-                      result = await singleProcessor.saveCurrentImage();
-                      await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
-                    } else {
-                      await Fluttertoast.showToast(msg: "Missing permission");
-                    }
+                    await Fluttertoast.showToast(msg: "Missing permission");
                   }
-                },
-                tooltip: "Save image",
-                heroTag: null,
-                child: const Icon(Icons.download),
-              ),
-              seperator,
-              FloatingActionButton(
-                onPressed: () => setState(() {
-                  singleProcessor.resetProgress();
-                }),
-                tooltip: "Find another image",
-                heroTag: null,
-                child: const Icon(Icons.refresh),
-              ),
-              seperator,
-            ],
-          );
-        }
+                }
+              },
+              tooltip: "Save image",
+              heroTag: null,
+              child: const Icon(Icons.download),
+            ),
+            seperator,
+          ],
+        );
       }
 
       buttons.addAll(
@@ -256,6 +244,15 @@ class _ImagesPageState extends State<ImagesPage> {
             tooltip: "Open menu",
             heroTag: null,
             child: const Icon(Icons.list),
+          ),
+          seperator,
+          FloatingActionButton(
+            onPressed: () => setState(() {
+              singleProcessor.resetProgress();
+            }),
+            tooltip: "Find another image",
+            heroTag: null,
+            child: const Icon(Icons.refresh),
           ),
           seperator,
           FloatingActionButton(
@@ -275,25 +272,6 @@ class _ImagesPageState extends State<ImagesPage> {
       ];
     }
     return buttons;
-  }
-
-  Widget buildSingleImage(BuildContext context, AsyncSnapshot<ImageData> snapshot) {
-    if (snapshot.connectionState == ConnectionState.done) {
-      var data = snapshot.data!;
-      if (data is NullImageData) {
-        singleProcessor.resetProgress();
-        return FutureBuilder(
-          future: singleProcessor.inProgress.future,
-          builder: buildSingleImage,
-        );
-      }
-
-      return Image.memory(data.data);
-    } else if (snapshot.connectionState == ConnectionState.waiting) {
-      return loadingIndicator(content: "Loading image");
-    } else {
-      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
-    }
   }
 
   /// Build [Scaffold]'s body when fetching multiple images
@@ -318,31 +296,37 @@ class _ImagesPageState extends State<ImagesPage> {
           builder: (context, snapshot) {
             var edge = MediaQuery.of(context).size.width / 2;
             if (snapshot.connectionState == ConnectionState.done) {
-              return Image.memory(
-                snapshot.data!.data,
-                width: edge,
-                height: edge,
-                fit: BoxFit.cover,
-              );
-            } else if (snapshot.connectionState == ConnectionState.waiting) {
-              return SizedBox(
-                width: edge,
-                height: edge,
-                child: loadingIndicator(
-                  content: "Loading image",
-                  size: edge / 4,
-                ),
-              );
-            } else {
-              return SizedBox(
-                width: edge,
-                height: edge,
-                child: errorIndicator(
-                  content: "Invalid state: ${snapshot.connectionState}",
-                  size: edge / 4,
-                ),
-              );
+              var data = snapshot.data;
+              if (data != null) {
+                return Image.memory(
+                  data.data,
+                  width: edge,
+                  height: edge,
+                  fit: BoxFit.cover,
+                );
+              }
+
+              var error = snapshot.error;
+              if (error != null) {
+                return SizedBox(
+                  width: edge,
+                  height: edge,
+                  child: errorIndicator(
+                    content: "Error: $error",
+                    size: edge / 4,
+                  ),
+                );
+              }
             }
+
+            return SizedBox(
+              width: edge,
+              height: edge,
+              child: loadingIndicator(
+                content: "Loading image",
+                size: edge / 4,
+              ),
+            );
           },
         ),
       );
@@ -366,13 +350,37 @@ class _ImagesPageState extends State<ImagesPage> {
           : Center(
               child: FutureBuilder(
                 future: singleProcessor.inProgress.future,
-                builder: buildSingleImage,
+                builder: (_, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    var data = snapshot.data;
+                    if (data != null) {
+                      return Image.memory(data.data);
+                    }
+
+                    var error = snapshot.error;
+                    if (error != null) {
+                      return errorIndicator(content: "Error: $error");
+                    }
+                  }
+
+                  return loadingIndicator(content: "Loading image");
+                },
               ),
             ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: createButtonArray(context),
-      ),
+      floatingActionButton: _displayMultipleImages
+          ? FloatingActionButton(
+              onPressed: openDrawer,
+              tooltip: "Open menu",
+              heroTag: null,
+              child: const Icon(Icons.list),
+            )
+          : FutureBuilder(
+              future: singleProcessor.inProgress.future,
+              builder: (context, snapshot) => Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: createSingleImageButtonArray(context, snapshot),
+              ),
+            ),
     );
 
     return WillPopScope(

@@ -8,7 +8,7 @@ class AsyncImageViewer {
   final progress = <Future<ImageData>?>[];
 
   AsyncImageViewer(this._urls, this._fetcher) {
-    for (int i = 0; i < length; i++) {
+    for (var i = 0; i < length; i++) {
       progress.add(null);
     }
   }
@@ -34,8 +34,7 @@ class ImageCache {
 
   AsyncImageViewer view(Future<ImageData> Function(String) fetcher) => AsyncImageViewer(List<String>.from(_urls), fetcher);
 
-  Future<void> add(String url, ImageData data) async {
-    await data.compress();
+  void add(String url, ImageData data) {
     _cache[url] = data;
     _urls.add(url);
   }

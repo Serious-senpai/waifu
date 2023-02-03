@@ -22,7 +22,7 @@ class AsyncImageViewer {
 /// This class actually only holds the data for some latest images,
 /// earlier images will be fetched again from the servers instead.
 class ImageCache {
-  final _cache = LruMap<String, ImageData>(maximumSize: 20);
+  final _cache = LruMap<String, ImageData>(maximumSize: 30);
   final _urls = <String>{};
 
   int get maxSize => _cache.maximumSize;

@@ -18,6 +18,8 @@ class HTTPClient {
   final _semaphore = Semaphore(5);
 
   Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));
+
+  void cancelAll() => _semaphore.cancelAll();
 }
 
 class ImageClient {
@@ -109,7 +111,7 @@ class SingleImageProcessor {
   void resetProgress({bool forced = false, ImageData? customData}) {
     if (!inProgress.isCompleted) {
       if (forced) {
-        inProgress.completeError(RequestCancelledException);
+        inProgress.complete(nullImageData);
       } else {
         Fluttertoast.showToast(msg: "You are on a cooldown!");
         return;
@@ -126,6 +128,12 @@ class SingleImageProcessor {
             inProgress.complete(data);
           }
           return data;
+        },
+        onError: (_) {
+          if (!inProgress.isCompleted) {
+            inProgress.complete(nullImageData);
+          }
+          return nullImageData;
         },
       );
     } else {
@@ -153,7 +161,10 @@ class MultipleImagesProcessor {
 
   MultipleImagesProcessor(this.client);
 
-  void clearProcess() => inProgress.clear();
+  void clearProcess() {
+    client.http.cancelAll();
+    inProgress.clear();
+  }
 
   void addProcess({ImageData? customData}) {
     var process = Completer<ImageData>();
@@ -167,6 +178,12 @@ class MultipleImagesProcessor {
             process.complete(data);
           }
           return data;
+        },
+        onError: (_) {
+          if (!process.isCompleted) {
+            process.complete(nullImageData);
+          }
+          return nullImageData;
         },
       );
     } else {

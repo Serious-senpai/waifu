@@ -4,6 +4,7 @@ import "package:fluttertoast/fluttertoast.dart";
 import "package:permission_handler/permission_handler.dart";
 
 import "../core/client.dart";
+import "../core/sources.dart";
 import "../core/utils.dart";
 
 class ImagesPage extends StatefulWidget {
@@ -276,6 +277,25 @@ class _ImagesPageState extends State<ImagesPage> {
     return buttons;
   }
 
+  Widget buildSingleImage(BuildContext context, AsyncSnapshot<ImageData> snapshot) {
+    if (snapshot.connectionState == ConnectionState.done) {
+      var data = snapshot.data!;
+      if (data is NullImageData) {
+        singleProcessor.resetProgress();
+        return FutureBuilder(
+          future: singleProcessor.inProgress.future,
+          builder: buildSingleImage,
+        );
+      }
+
+      return Image.memory(data.data);
+    } else if (snapshot.connectionState == ConnectionState.waiting) {
+      return loadingIndicator(content: "Loading image");
+    } else {
+      return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
+    }
+  }
+
   /// Build [Scaffold]'s body when fetching multiple images
   Widget buildMultipleImages() {
     Widget buildImage(int index) {
@@ -289,6 +309,7 @@ class _ImagesPageState extends State<ImagesPage> {
           if (process.isCompleted) {
             var result = await process.future;
             singleProcessor.resetProgress(forced: true, customData: result);
+            multiProcessor.clearProcess();
             setState(() => _displayMultipleImages = false);
           }
         },
@@ -345,15 +366,7 @@ class _ImagesPageState extends State<ImagesPage> {
           : Center(
               child: FutureBuilder(
                 future: singleProcessor.inProgress.future,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    return Image.memory(snapshot.data!.data);
-                  } else if (snapshot.connectionState == ConnectionState.waiting) {
-                    return loadingIndicator(content: "Loading image");
-                  } else {
-                    return errorIndicator(content: "Invalid state: ${snapshot.connectionState}");
-                  }
-                },
+                builder: buildSingleImage,
               ),
             ),
       floatingActionButton: Column(

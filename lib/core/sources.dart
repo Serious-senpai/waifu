@@ -27,6 +27,12 @@ class ImageData {
   String toString() => "<ImageData url = $url>";
 }
 
+class NullImageData extends ImageData {
+  NullImageData() : super("", "", true, Uint8List.fromList([]));
+}
+
+var nullImageData = NullImageData();
+
 abstract class ImageSource {
   /// The SFW categories that this source can handle
   abstract final Set<String> sfw;

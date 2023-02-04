@@ -31,7 +31,9 @@ class ImageCache {
   int get length => _urls.length;
 
   ImageData? operator [](String key) => _cache[key];
+  void operator []=(String key, ImageData data) => add(key, data);
 
+  /// Provide an [AsyncImageViewer] of the current cache images
   AsyncImageViewer view(Future<ImageData> Function(String) fetcher) => AsyncImageViewer(List<String>.from(_urls), fetcher);
 
   void add(String url, ImageData data) {

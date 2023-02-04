@@ -14,12 +14,16 @@ import "sources.dart";
 /// If [isSfw] is ``true``, return "sfw", otherwise return "nsfw"
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
+/// Wrapper of a [Client] with methods controlled by a [Semaphore]
 class HTTPClient {
   final _http = Client();
 
   final _semaphore = Semaphore(5);
 
+  /// Perform a HTTP GET request
   Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));
+
+  /// Perform a HTTP POST request
   Future<Response> post(
     Uri url, {
     Map<String, String>? headers,
@@ -28,6 +32,7 @@ class HTTPClient {
   }) =>
       _semaphore.run(() => _http.post(url, headers: headers, body: body, encoding: encoding));
 
+  /// Cancel all running operations
   void cancelAll() => _semaphore.cancelAll();
 }
 
@@ -61,6 +66,9 @@ class ImageClient {
 
   final _rng = Random();
 
+  /// Prepare neccesary data for this [ImageClient].
+  ///
+  /// This method should be called only once
   Future<void> prepare() async {
     var sources = constructSources(this);
     var prepareFutures = <Future<void>>[];
@@ -84,6 +92,7 @@ class ImageClient {
     multiProcessor = MultipleImagesProcessor(this);
   }
 
+  /// Fetch a random image with the current category and mode
   Future<ImageData> fetchImage() async {
     var category = this.category;
     var isSfw = this.isSfw;
@@ -92,11 +101,10 @@ class ImageClient {
     var source = sources[index];
 
     var url = await source.getImageUrl(category, isSfw: isSfw);
-    history.add(url, await fetchFromURL(url));
-
-    return history[url]!;
+    return await fetchFromURL(url);
   }
 
+  /// Fetch an image's binaru data from an URL and cache it
   Future<ImageData> fetchFromURL(String url) async {
     if (history[url] != null) {
       return history[url]!;
@@ -105,6 +113,7 @@ class ImageClient {
     var response = await http.get(Uri.parse(url));
     var result = ImageData(url, category, isSfw, response.bodyBytes);
     await result.compress();
+    history.add(url, result);
     return result;
   }
 

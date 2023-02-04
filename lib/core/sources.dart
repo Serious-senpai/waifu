@@ -83,12 +83,15 @@ mixin _SupportFetchingMultipleImages on _BaseImageSource {
   @nonVirtual
   Future<String> getImageUrl(String category, {required bool isSfw}) async {
     var fetchedResults = isSfw ? _sfwResults : _nsfwResults;
-    if (fetchedResults[category] == null || fetchedResults[category]!.isEmpty) {
-      fetchedResults[category] = ListQueue<String>();
-      fetchedResults[category]!.addAll(await _getImagesUrl(category, isSfw: isSfw));
-    }
+    fetchedResults[category] ??= ListQueue<String>();
 
-    return fetchedResults[category]!.removeFirst();
+    while (true) {
+      try {
+        return fetchedResults[category]!.removeFirst();
+      } on StateError {
+        fetchedResults[category]!.addAll(await _getImagesUrl(category, isSfw: isSfw));
+      }
+    }
   }
 }
 

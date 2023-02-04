@@ -1,3 +1,4 @@
+import "package:async_locks/async_locks.dart";
 import "package:quiver/collection.dart";
 
 import "sources.dart";
@@ -25,10 +26,27 @@ class ImageCache {
   final _cache = LruMap<String, ImageData>(maximumSize: 30);
   final _urls = <String>{};
 
+  /// Maximum size of this cache
   int get maxSize => _cache.maximumSize;
   set maxSize(int value) => _cache.maximumSize = value;
 
+  /// Number of fetched images
   int get length => _urls.length;
+
+  final _lengthInBytesEvent = Event();
+
+  /// Total memory size of the images' binary data
+  double get lengthInBytes {
+    var sum = 0.0;
+    _cache.forEach((_, data) => sum += data.data.lengthInBytes);
+    return sum;
+  }
+
+  Stream<double> lengthInBytesStream() async* {
+    await _lengthInBytesEvent.wait();
+    _lengthInBytesEvent.clear();
+    yield lengthInBytes;
+  }
 
   ImageData? operator [](String key) => _cache[key];
   void operator []=(String key, ImageData data) => add(key, data);
@@ -39,5 +57,6 @@ class ImageCache {
   void add(String url, ImageData data) {
     _cache[url] = data;
     _urls.add(url);
+    _lengthInBytesEvent.set();
   }
 }

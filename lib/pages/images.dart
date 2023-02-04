@@ -128,11 +128,24 @@ class _ImagesPageState extends State<ImagesPage> {
                       );
 
                       if (value != null) {
-                        client.history.maxSize = value;
-                        await Fluttertoast.showToast(msg: "Changed cache size to $value");
+                        if (value < 0) {
+                          await Fluttertoast.showToast(msg: "Invalid cache size");
+                        } else {
+                          client.history.maxSize = value;
+                          await Fluttertoast.showToast(msg: "Changed cache size to $value");
+                        }
                       }
                     },
-                  )
+                  ),
+                  ListTile(
+                    title: StreamBuilder(
+                      stream: client.history.lengthInBytesStream(),
+                      builder: (context, snapshot) {
+                        var size = (snapshot.data ?? 0.0) / 1024;
+                        return Text("Cache size: ${size.toStringAsFixed(2)} KB");
+                      },
+                    ),
+                  ),
                 ],
               ),
               ListTile(
@@ -169,7 +182,7 @@ class _ImagesPageState extends State<ImagesPage> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text("Image URL"),
-                    content: Text(data.url),
+                    content: Text(data.url.toString()),
                     actions: <Widget>[
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
@@ -177,14 +190,14 @@ class _ImagesPageState extends State<ImagesPage> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          Clipboard.setData(ClipboardData(text: data.url));
+                          Clipboard.setData(ClipboardData(text: data.url.toString()));
                           await Fluttertoast.showToast(msg: "Copied to clipboard");
                         },
                         child: const Text("Copy"),
                       ),
                       TextButton(
                           onPressed: () async {
-                            await launch(Uri.parse(data.url));
+                            await launch(Uri.parse(data.url.toString()));
                           },
                           child: const Text("Open")),
                     ],
@@ -215,13 +228,13 @@ class _ImagesPageState extends State<ImagesPage> {
             seperator,
             FloatingActionButton(
               onPressed: () async {
-                var result = await ImageClient.saveImage(data);
+                var result = await client.saveImage(data.url);
                 if (result) {
                   await Fluttertoast.showToast(msg: "Saved image!");
                 } else {
                   var request = await Permission.storage.request();
                   if (request.isGranted) {
-                    result = await ImageClient.saveImage(data);
+                    result = await client.saveImage(data.url);
                     await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
                   } else {
                     await Fluttertoast.showToast(msg: "Missing permission");

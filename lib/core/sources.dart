@@ -8,7 +8,7 @@ import "package:meta/meta.dart";
 import "client.dart";
 
 class ImageData {
-  final String url;
+  final Uri url;
   final String category;
   final bool isSfw;
   Uint8List _data;

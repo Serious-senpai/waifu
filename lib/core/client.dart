@@ -110,18 +110,20 @@ class ImageClient {
       return history[url]!;
     }
 
-    var response = await http.get(Uri.parse(url));
-    var result = ImageData(url, category, isSfw, response.bodyBytes);
+    var uri = Uri.parse(url);
+    var response = await http.get(uri);
+    var result = ImageData(uri, category, isSfw, response.bodyBytes);
     await result.compress();
     history.add(url, result);
     return result;
   }
 
-  /// Save the current image which has been completely fetched.
+  /// Save an image from URL
   ///
   /// Returns `true` on success and `false` otherwise.
-  static Future<bool> saveImage(ImageData image) async {
-    var result = await ImageGallerySaver.saveImage(image.data);
+  Future<bool> saveImage(Uri url) async {
+    var response = await http.get(url);
+    var result = await ImageGallerySaver.saveImage(response.bodyBytes);
     return result["isSuccess"];
   }
 }

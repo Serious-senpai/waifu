@@ -18,7 +18,7 @@ String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 class HTTPClient {
   final _http = Client();
 
-  final _semaphore = Semaphore(5);
+  final _semaphore = Semaphore(4);
 
   /// Perform a HTTP GET request
   Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));

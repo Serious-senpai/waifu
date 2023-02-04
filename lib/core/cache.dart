@@ -31,21 +31,35 @@ class ImageCache {
   set maxSize(int value) => _cache.maximumSize = value;
 
   /// Number of fetched images
+  ///
+  /// This number may exceed [maxSize] because it also includes the images
+  /// whose binary data was removed from the cache
   int get length => _urls.length;
 
+  /// Number of images whose binary data is cached
+  int get lengthCached => _cache.length;
+
   final _lengthInBytesEvent = Event();
+  Stream<double>? _lengthInBytesStream;
+  Stream<double> get lengthInBytesStream {
+    if (_lengthInBytesStream != null) return _lengthInBytesStream!;
+
+    Stream<double> singleStream() async* {
+      while (true) {
+        await _lengthInBytesEvent.wait();
+        _lengthInBytesEvent.clear();
+        yield lengthInBytes;
+      }
+    }
+
+    return _lengthInBytesStream = singleStream().asBroadcastStream();
+  }
 
   /// Total memory size of the images' binary data
   double get lengthInBytes {
     var sum = 0.0;
     _cache.forEach((_, data) => sum += data.data.lengthInBytes);
     return sum;
-  }
-
-  Stream<double> lengthInBytesStream() async* {
-    await _lengthInBytesEvent.wait();
-    _lengthInBytesEvent.clear();
-    yield lengthInBytes;
   }
 
   ImageData? operator [](String key) => _cache[key];

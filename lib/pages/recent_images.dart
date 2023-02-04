@@ -14,18 +14,19 @@ class RecentImagesPage extends StatefulWidget {
   State<RecentImagesPage> createState() => _RecentImagesPageState();
 }
 
-GestureDetector createRedirectImage(BuildContext context, ImageClient client, ImageData image, double edge) {
-  return GestureDetector(
-    onTap: () {
-      client.singleProcessor.resetProgress(forced: true, customData: image);
-      Navigator.pushReplacementNamed(context, "/");
-    },
-    child: Image.memory(image.data, width: edge, height: edge, fit: BoxFit.cover),
-  );
-}
-
 class _RecentImagesPageState extends State<RecentImagesPage> {
   ImageClient get client => widget.client;
+
+  GestureDetector createRedirectImage(ImageData image, double edge) {
+    return GestureDetector(
+      onTap: () {
+        client.singleProcessor.resetProgress(forced: true, customData: image);
+        client.http.cancelAll();
+        Navigator.pushReplacementNamed(context, "/");
+      },
+      child: Image.memory(image.data, width: edge, height: edge, fit: BoxFit.cover),
+    );
+  }
 
   Widget buildHistoryImage(AsyncImageViewer historyView, int index) {
     return FutureBuilder(
@@ -35,7 +36,7 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
         if (snapshot.connectionState == ConnectionState.done) {
           var data = snapshot.data;
           if (data != null) {
-            return createRedirectImage(context, client, data, edge);
+            return createRedirectImage(data, edge);
           }
 
           var error = snapshot.error;
@@ -74,6 +75,7 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
       ),
       body: ListView.builder(
         itemCount: (historyView.length / 2).ceil(),
+        cacheExtent: 1000.0,
         itemBuilder: (context, index) {
           var children = <Widget>[buildHistoryImage(historyView, 2 * index)];
           if (2 * index + 1 < historyView.length) {
@@ -85,6 +87,7 @@ class _RecentImagesPageState extends State<RecentImagesPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          client.http.cancelAll();
           Navigator.pushReplacementNamed(context, "/");
         },
         tooltip: "Back",

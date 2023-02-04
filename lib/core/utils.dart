@@ -61,3 +61,21 @@ Future<void> launch(Uri url) async {
     await Fluttertoast.showToast(msg: "Cannot launch $url");
   }
 }
+
+/// Return a string displaying a certain memory amount.
+///
+/// For example:
+/// - 2 bytes -> "2 B"
+/// - 1024 bytes -> "1 KB"
+/// - 1048576 bytes -> "1 MB"
+String displayBytes(num bytes) {
+  var units = ["B", "KB", "MB", "GB", "TB"];
+
+  int unitIndex = 0;
+  while (bytes >= 1024) {
+    bytes /= 1024;
+    unitIndex++;
+  }
+
+  return "${bytes.toStringAsFixed(2)} ${units[unitIndex]}";
+}

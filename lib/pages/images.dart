@@ -139,10 +139,9 @@ class _ImagesPageState extends State<ImagesPage> {
                   ),
                   ListTile(
                     title: StreamBuilder(
-                      stream: client.history.lengthInBytesStream(),
-                      builder: (context, snapshot) {
-                        var size = (snapshot.data ?? 0.0) / 1024;
-                        return Text("Cache size: ${size.toStringAsFixed(2)} KB");
+                      stream: client.history.lengthInBytesStream,
+                      builder: (_, __) {
+                        return Text("Cache size: ${displayBytes(client.history.lengthInBytes)} (${client.history.lengthCached}/${client.history.maxSize})");
                       },
                     ),
                   ),
@@ -150,7 +149,10 @@ class _ImagesPageState extends State<ImagesPage> {
               ),
               ListTile(
                 title: const Text("Recent images"),
-                onTap: () => Navigator.pushReplacementNamed(context, "/recent-images"),
+                onTap: () {
+                  client.http.cancelAll();
+                  Navigator.pushReplacementNamed(context, "/recent-images");
+                },
               )
             ],
           ),
@@ -347,6 +349,7 @@ class _ImagesPageState extends State<ImagesPage> {
 
     assert(_displayMultipleImages);
     return ListView.builder(
+      cacheExtent: 1000.0,
       itemBuilder: (context, index) => Row(
         children: [buildImage(2 * index), buildImage(2 * index + 1)],
       ),

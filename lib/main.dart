@@ -46,6 +46,10 @@ class MainApp extends StatelessWidget {
         "/": (context) => ImagesPage(client: client),
         "/recent-images": (context) => RecentImagesPage(client: client),
       },
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        scrollbars: false,
+        overscroll: false,
+      ),
     );
   }
 }

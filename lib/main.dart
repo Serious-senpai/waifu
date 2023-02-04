@@ -5,6 +5,7 @@ import "package:flutter/services.dart";
 import "package:fluttertoast/fluttertoast.dart";
 
 import "core/client.dart";
+import "core/constants.dart";
 import "pages/images.dart";
 import "pages/recent_images.dart";
 
@@ -14,7 +15,7 @@ Future<void> main() async {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
     SystemChrome.setSystemUIChangeCallback(
       (systemOverlaysAreVisible) async {
-        await Future.delayed(const Duration(seconds: 4));
+        await Future.delayed(hideSystemOverlayAfter);
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
       },
     );

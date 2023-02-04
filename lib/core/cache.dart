@@ -1,6 +1,7 @@
 import "package:async_locks/async_locks.dart";
 import "package:quiver/collection.dart";
 
+import "constants.dart";
 import "sources.dart";
 
 class AsyncImageViewer {
@@ -23,7 +24,7 @@ class AsyncImageViewer {
 /// This class actually only holds the data for some latest images,
 /// earlier images will be fetched again from the servers instead.
 class ImageCache {
-  final _cache = LruMap<String, ImageData>(maximumSize: 30);
+  final _cache = LruMap<String, ImageData>(maximumSize: initialImagesCacheSize);
   final _urls = <String>{};
 
   /// Maximum size of this cache

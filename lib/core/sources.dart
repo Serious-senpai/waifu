@@ -6,6 +6,7 @@ import "package:flutter_image_compress/flutter_image_compress.dart";
 import "package:meta/meta.dart";
 
 import "client.dart";
+import "constants.dart";
 
 class ImageData {
   final Uri url;
@@ -21,7 +22,7 @@ class ImageData {
   Future<void> compress({bool force = false}) async {
     if (_compressed && !force) return;
 
-    _data = await FlutterImageCompress.compressWithList(_data, quality: 80, format: CompressFormat.webp);
+    _data = await FlutterImageCompress.compressWithList(_data, quality: compressImageQuality, format: CompressFormat.webp);
     _compressed = true;
   }
 

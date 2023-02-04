@@ -33,10 +33,10 @@ jobs:
         flutter doctor -v
 
     - name: Initialize project
-      run: flutter create --platforms android .
+      run: flutter create --platforms android --project-name waifu -v .
 
     - name: Analyze project
-      run: flutter analyze
+      run: flutter analyze -v
 
     - name: Test build
-      run: flutter build apk
+      run: flutter build apk -v

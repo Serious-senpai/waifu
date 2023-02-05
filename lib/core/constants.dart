@@ -7,7 +7,7 @@ import "client.dart";
 const reSmushCompressImageQualityPercentage = 40;
 
 /// Images quality percentage when compressing locally
-const compressImageQualityPercentage = 40;
+const compressImageQualityPercentage = 35;
 
 /// Max concurrency for [UnfairSemaphore] inside [HTTPClient]
 const httpClientMaxConcurrency = 4;

@@ -15,11 +15,11 @@ import "sources.dart";
 /// If [isSfw] is ``true``, return "sfw", otherwise return "nsfw"
 String sfwStateExpression(bool isSfw) => isSfw ? "sfw" : "nsfw";
 
-/// Wrapper of a [Client] with methods controlled by a [Semaphore]
+/// Wrapper of a [Client] with methods controlled by an [UnfairSemaphore]
 class HTTPClient {
   final _http = Client();
 
-  final _semaphore = Semaphore(httpClientMaxConcurrency);
+  final _semaphore = UnfairSemaphore(httpClientMaxConcurrency);
 
   /// Perform a HTTP GET request
   Future<Response> get(Uri url, {Map<String, String>? headers}) => _semaphore.run(() => _http.get(url, headers: headers));

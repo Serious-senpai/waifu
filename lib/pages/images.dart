@@ -101,24 +101,24 @@ class _ImagesPageState extends State<ImagesPage> {
                     title: const Text("Edit images cache size"),
                     onTap: () async {
                       var controller = TextEditingController(text: client.history.maxSize.toString());
-                      var value = await showDialog<int>(
+                      var value = await showDialog<int?>(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text("Maximum cached images"),
                           content: TextField(
                             controller: controller,
-                            decoration: const InputDecoration.collapsed(hintText: "Cache size"),
+                            decoration: const InputDecoration.collapsed(hintText: "Cache size (1 - 200)"),
                             keyboardType: TextInputType.number,
                             showCursor: true,
                             enableSuggestions: false,
-                            maxLength: 2,
+                            maxLength: 3,
                             maxLengthEnforcement: MaxLengthEnforcement.enforced,
                           ),
                           actions: <Widget>[
                             TextButton(
                               onPressed: () {
                                 if (controller.text.isNotEmpty) {
-                                  Navigator.pop(context, int.parse(controller.text));
+                                  Navigator.pop(context, int.tryParse(controller.text));
                                 }
                               },
                               child: const Text("OK"),
@@ -128,7 +128,7 @@ class _ImagesPageState extends State<ImagesPage> {
                       );
 
                       if (value != null) {
-                        if (value < 0) {
+                        if (value < 0 || value > 200) {
                           await Fluttertoast.showToast(msg: "Invalid cache size");
                         } else {
                           client.history.maxSize = value;

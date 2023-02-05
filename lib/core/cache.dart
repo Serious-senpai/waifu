@@ -29,7 +29,10 @@ class ImageCache {
 
   /// Maximum size of this cache
   int get maxSize => _cache.maximumSize;
-  set maxSize(int value) => _cache.maximumSize = value;
+  set maxSize(int value) {
+    _cache.maximumSize = value;
+    _lengthInBytesEvent.set();
+  }
 
   /// Number of fetched images
   ///

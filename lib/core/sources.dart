@@ -22,7 +22,7 @@ class ImageData {
   Future<void> compress({bool force = false}) async {
     if (_compressed && !force) return;
 
-    _data = await FlutterImageCompress.compressWithList(_data, quality: compressImageQuality, format: CompressFormat.webp);
+    _data = await FlutterImageCompress.compressWithList(_data, quality: compressImageQualityPercentage, format: CompressFormat.webp);
     _compressed = true;
   }
 

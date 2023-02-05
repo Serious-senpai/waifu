@@ -214,13 +214,7 @@ class _ImagesPageState extends State<ImagesPage> {
             FloatingActionButton(
               onPressed: () async {
                 await launch(
-                  Uri.https(
-                    "saucenao.com",
-                    "/search.php",
-                    {
-                      "url": data.url,
-                    },
-                  ),
+                  Uri.https("saucenao.com", "/search.php", {"url": data.url}),
                 );
               },
               tooltip: "Search on saucenao.com",
@@ -230,16 +224,47 @@ class _ImagesPageState extends State<ImagesPage> {
             seperator,
             FloatingActionButton(
               onPressed: () async {
-                var result = await client.saveImage(data.url);
-                if (result) {
-                  await Fluttertoast.showToast(msg: "Saved image!");
-                } else {
-                  var request = await Permission.storage.request();
-                  if (request.isGranted) {
-                    result = await client.saveImage(data.url);
-                    await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
+                var proceed = client.forceSaveImage
+                    ? true
+                    : await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          content: const Text("This image does not have the highest quality and you are "
+                              "recommended to use the saucenao.com search function instead.\nDo you still "
+                              "want to download this image?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text("Yes"),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                client.forceSaveImage = true;
+                                Navigator.pop(context, true);
+                              },
+                              child: const Text("Yes, don't ask again"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("No"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                if (proceed == true) {
+                  await Fluttertoast.showToast(msg: "Saving image...");
+                  var result = await client.saveImage(data.url);
+                  if (result) {
+                    await Fluttertoast.showToast(msg: "Saved image!");
                   } else {
-                    await Fluttertoast.showToast(msg: "Missing permission");
+                    var request = await Permission.storage.request();
+                    if (request.isGranted) {
+                      result = await client.saveImage(data.url);
+                      await Fluttertoast.showToast(msg: result ? "Saved image!" : "Unable to save this image!");
+                    } else {
+                      await Fluttertoast.showToast(msg: "Missing permission");
+                    }
                   }
                 }
               },

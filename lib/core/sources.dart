@@ -60,7 +60,7 @@ class _BaseImageSource extends ImageSource {
   final nsfw = <String>{};
 
   @override
-  String get baseUrl => throw UnimplementedError;
+  String get baseUrl => throw UnimplementedError();
 
   @override
   final ImageClient client;
@@ -68,17 +68,17 @@ class _BaseImageSource extends ImageSource {
   _BaseImageSource(this.client);
 
   @override
-  Future<void> populateCategories() => throw UnimplementedError;
+  Future<void> populateCategories() => throw UnimplementedError();
 
   @override
-  Future<String> getImageUrl(String category, {required bool isSfw}) => throw UnimplementedError;
+  Future<String> getImageUrl(String category, {required bool isSfw}) => throw UnimplementedError();
 }
 
 mixin _SupportFetchingMultipleImages on _BaseImageSource {
   final _sfwResults = <String, ListQueue<String>>{};
   final _nsfwResults = <String, ListQueue<String>>{};
 
-  Future<List<String>> _getImagesUrl(String category, {required bool isSfw}) => throw UnimplementedError;
+  Future<List<String>> _getImagesUrl(String category, {required bool isSfw}) => throw UnimplementedError();
 
   @override
   @nonVirtual

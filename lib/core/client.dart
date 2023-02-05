@@ -50,11 +50,17 @@ class ImageClient {
   /// Mapping of image URLs to image data
   final history = ImageCache();
 
+  /// Image whose original size exceeded 5 MB
+  final blacklistedImage = <String>{};
+
   /// Single processor that manages the image fetching process
   late final SingleImageProcessor singleProcessor;
 
   /// Multi-processor that manages the image fetching process
   late final MultipleImagesProcessor multiProcessor;
+
+  /// Save image without asking
+  bool forceSaveImage = false;
 
   /// The current image category
   String category = "waifu";
@@ -101,19 +107,43 @@ class ImageClient {
     var index = _rng.nextInt(sources!.length);
     var source = sources[index];
 
-    var url = await source.getImageUrl(category, isSfw: isSfw);
-    return await fetchFromURL(url);
+    while (true) {
+      var url = await source.getImageUrl(category, isSfw: isSfw);
+      if (blacklistedImage.contains(url)) {
+        continue;
+      }
+
+      try {
+        return await fetchFromURL(url);
+      } on ReSmushClientException {
+        blacklistedImage.add(url);
+      }
+    }
   }
 
-  /// Fetch an image's binaru data from an URL and cache it
+  /// Fetch an image's binary data from an URL and cache it
   Future<ImageData> fetchFromURL(String url) async {
     if (history[url] != null) {
       return history[url]!;
     }
 
-    var uri = Uri.parse(url);
-    var response = await http.get(uri);
-    var result = ImageData(uri, category, isSfw, response.bodyBytes);
+    var response = await http.get(
+      Uri.http(
+        "api.resmush.it",
+        "/ws.php",
+        {"img": url, "qlty": reSmushCompressImageQualityPercentage.toString()},
+      ),
+    );
+
+    var data = jsonDecode(response.body);
+    var imageUrl = data["dest"];
+    if (imageUrl == null) {
+      throw ReSmushClientException(data);
+    }
+
+    response = await http.get(Uri.parse(imageUrl));
+
+    var result = ImageData(Uri.parse(url), category, isSfw, response.bodyBytes);
     await result.compress();
     history.add(url, result);
     return result;
@@ -141,7 +171,7 @@ class SingleImageProcessor {
   void resetProgress({bool forced = false, ImageData? customData}) {
     if (!inProgress.isCompleted) {
       if (forced) {
-        inProgress.completeError(RequestCancelledException);
+        inProgress.completeError(RequestCancelledException());
       } else {
         Fluttertoast.showToast(msg: "You are on a cooldown!");
         return;

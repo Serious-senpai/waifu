@@ -4,7 +4,7 @@ import "cache.dart";
 import "client.dart";
 
 /// Images quality percentage when compressing from resmush.it
-const reSmushCompressImageQualityPercentage = 40;
+const reSmushCompressImageQualityPercentage = 30;
 
 /// Images quality percentage when compressing locally
 const compressImageQualityPercentage = 35;

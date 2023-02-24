@@ -33,7 +33,10 @@ jobs:
         flutter doctor -v
 
     - name: Initialize project
-      run: flutter create --platforms android --project-name waifu -v .
+      run: |
+        flutter create --platforms android --project-name mp3_player .
+        keytool -genkey -v -keystore android/app/upload-keystore.jks -storetype pkcs12 -keyalg RSA -keysize 2048 -validity 10950 -alias upload < ci/sample-keygen-input.txt
+        cp ci/key.properties.txt android/app/key.properties
 
     - name: Analyze project
       run: flutter analyze -v
